@@ -339,7 +339,7 @@ function rightLabel(q){
 }
 function feedbackFor(ok, q){
   if(ok) return '做得好！'+(q && (q.phrase||q.ansText||'') || '');
-  return '唔啲，應該：'+rightLabel(q);
+  return '唔啱，應該：'+rightLabel(q);
 }
 function buyPhrase(id){ return '買'+(ITEMS[id]?ITEMS[id].label:id); }
 function pickChoices(answerId, pool, n){
@@ -876,7 +876,7 @@ function startCatch(){
           if(Math.random()<0.4) setTarget();
         } else {
           combo=0; AudioFX.bad();
-          $('fb').textContent = '唔啲！應該：買'+ITEMS[target].label;
+          $('fb').textContent = '唔啱！應該：買'+ITEMS[target].label;
           $('fb').className='fb bad';
           stage.style.boxShadow='inset 0 0 0 6px rgba(231,76,60,.45)';
           setTimeout(function(){ stage.style.boxShadow=''; }, 350);
@@ -1001,7 +1001,7 @@ function startRunway(){
           $('rl'+lane).classList.add('bad-flash');
           const right = rowGates.find(function(x){ return x.good; });
           if(right) $('rl'+right.lane).classList.add('good-flash');
-          $('fb').textContent='唔啲！應該：'+(right?right.label:('買'+ITEMS[target].label));
+          $('fb').textContent='唔啱！應該：'+(right?right.label:('買'+ITEMS[target].label));
           $('fb').className='fb bad';
           setTimeout(function(){
             $('rl'+lane).classList.remove('bad-flash');
@@ -1064,7 +1064,7 @@ function startTalk(){
           } else {
             AudioFX.bad(); el.classList.add('wrong');
             Array.prototype.forEach.call(grid.children, function(c,ci){ if(choices[ci]===ans) c.classList.add('correct'); c.classList.add('disabled'); });
-            $('fb').textContent='唔啲，應該：'+ph; $('fb').className='fb bad';
+            $('fb').textContent='唔啱，應該：'+ph; $('fb').className='fb bad';
             $('after-row').style.display='flex';
             S.cur={type:'talk', phrase:ph, ans:ans, _talkRetry:function(){ S.locked=false; step=0; $('after-row').style.display='none'; $('fb').textContent=''; render(); }};
           }
@@ -1105,7 +1105,7 @@ function startTalk(){
             } else {
               AudioFX.bad();
               $('ts1').style.borderColor='#e74c3c'; $('ts2').style.borderColor='#e74c3c';
-              $('fb').textContent='唔啲，應該：'+ph; $('fb').className='fb bad';
+              $('fb').textContent='唔啱，應該：'+ph; $('fb').className='fb bad';
               $('after-row').style.display='flex';
               S.cur={type:'talk', phrase:ph, ans:ans, _talkRetry:function(){ S.locked=false; v1=null; v2=null; step=1; $('after-row').style.display='none'; $('fb').textContent=''; render(); }};
             }
