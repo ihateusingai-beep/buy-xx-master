@@ -1092,7 +1092,7 @@ function startCatch(){
     const ix = 12 + Math.random()*76;
     el.style.left = ix+'%'; el.style.top = '-10%';
     stage.appendChild(el);
-    const speed = (S.diff==='easy'?0.012:S.diff==='mid'?0.018:0.024) * (40+Math.random()*30);
+    const speed = (S.diff==='easy'?0.008:S.diff==='mid'?0.014:0.024) * (35+Math.random()*25);
     items.push({el:el, id:id, x:ix, y:-10, speed:speed, poison:poison, good:(!poison && id===target)});
   }
   let last = performance.now();
@@ -1102,7 +1102,7 @@ function startCatch(){
     const slow = now < slowUntil ? 0.45 : 1;
     if(vx) x = Math.max(8, Math.min(92, x + vx * 0.09 * dt * slow));
     basket.style.left = x+'%';
-    if(now - lastSpawn > (S.diff==='easy'?1400:S.diff==='mid'?1100:850)/slow){
+    if(now - lastSpawn > (S.diff==='easy'?2200:S.diff==='mid'?1600:850)/slow){
       spawn(); lastSpawn = now;
     }
     const bL = x-9, bR = x+9, magnet = combo>=2;
@@ -1294,10 +1294,10 @@ function startTalk(){
   function render(){
     const ans = customers[idx];
     const ph = '買'+ITEMS[ans].label;
-    S.answerSpeak = step===0 ? '今日買咩？' : ph;
+    S.answerSpeak = step===0 ? ('我要買'+ITEMS[ans].label) : ph;
     $('hud-q').textContent = (idx+1)+'/'+customers.length;
-    $('prompt').innerHTML = step===0 ? '聽店員，揀想買嘅嘢' : (step===1 ? ('砌短語 <mark>'+ph+'</mark>') : '完成！');
-    let line = step===0 ? '今日買咩呀？' : (step===1 ? ('請講：'+ph) : ('好呀！'+ph+'！'));
+    $('prompt').innerHTML = step===0 ? '聽店員，揀對應嘅嘢' : (step===1 ? ('砌短語 <mark>'+ph+'</mark>') : '完成！');
+    let line = step===0 ? ('我要買'+ITEMS[ans].label) : (step===1 ? ('請講：'+ph) : ('好呀！'+ph+'！'));
     if(step===0) setTimeout(function(){ speak(line); }, 200);
     else if(step===1) setTimeout(function(){ speak(ph); }, 200);
     if(step===0){
@@ -1306,8 +1306,11 @@ function startTalk(){
       const dist=shuffle(ALL.filter(function(x){return x!==ans;}));
       while(choices.length<nopt && dist.length) choices.push(dist.shift());
       choices=shuffle(choices);
-      body.innerHTML = '<div class="talk-wrap"><div class="npc think"><div class="face">NPC</div><div class="pixel-bar">店員</div></div><div><div class="bubble">'+line+'</div><div class="opts '+(nopt<=2?'n2':nopt===3?'n3':'n4')+'" style="margin-top:10px" id="talk-opts"></div><div style="margin-top:8px" id="talk-rec"></div></div></div>';
+      // 店員明示目標 — 顯示目標圖 + 短語 + 🔊 再聽掣
+      body.innerHTML = '<div class="talk-wrap"><div class="npc think"><div class="face">NPC</div><div class="pixel-bar">店員</div></div><div><div class="bubble"><mark>'+ITEMS[ans].label+'</mark> 喺邊？</div><div style="display:flex;align-items:center;gap:10px;margin-top:10px"><img src="'+ITEMS[ans].img+'" alt="'+ITEMS[ans].label+'" style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:3px solid #1e5a8a;flex:0 0 auto"><button type="button" class="btn sec" id="talk-replay" style="min-height:48px;padding:6px 14px;font-size:1.05rem">🔊 再聽</button><span style="font-weight:900;color:#1e5a8a;font-size:1.15rem">→ '+line+'</span></div><div class="opts '+(nopt<=2?'n2':nopt===3?'n3':'n4')+'" style="margin-top:12px" id="talk-opts"></div><div style="margin-top:8px" id="talk-rec"></div></div></div>';
       $('talk-rec').innerHTML = receipts.map(function(r){return '<span class="receipt"># '+r+'</span>';}).join('');
+      const replayBtn=$('talk-replay');
+      if(replayBtn) replayBtn.onclick=function(){ speak(line); };
       const grid=$('talk-opts');
       choices.forEach(function(id,i){
         const el=document.createElement('button'); el.type='button'; el.className='opt';
