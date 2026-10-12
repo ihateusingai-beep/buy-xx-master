@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e5a8a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 <title>到商場去｜將軍澳培智學校</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -354,7 +357,7 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
     </div>
   </div>
 </div>
-<div class="footer">@2026 程棨彥老師 · BUILD:buy-xx-v1.8-sen</div>
+<div class="footer">@2026 程棨彥老師 · BUILD:buy-xx-v1.8-sen-pwa</div>
 <div class="stage-overlay" id="stage-overlay" aria-hidden="true">
   <div class="stage-card">
     <div class="big" id="stage-emoji">⭐</div>
@@ -1401,6 +1404,13 @@ if($('stage-overlay')) $('stage-overlay').onclick=function(){
 // SEN locks
 document.addEventListener('contextmenu', e=>e.preventDefault());
 document.addEventListener('selectstart', e=>e.preventDefault());
+
+// PWA: register service worker (offline-ready for SEN classroom)
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{ /* offline-only mode still works */ });
+  });
+}
 </script>
 </body>
 </html>
