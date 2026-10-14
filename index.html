@@ -309,6 +309,12 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
             </select>
           </label>
         </div>
+        <div class="row" id="catch-speed-row" style="margin-top:6px;align-items:center">
+          <span style="font-weight:800">Retro 速度</span>
+          <button class="chip on" data-cs="slow" type="button">🐢 慢</button>
+          <button class="chip" data-cs="mid" type="button">🚶 中</button>
+          <button class="chip" data-cs="fast" type="button">🏃 快</button>
+        </div>
       </details>
     </div>
   </div>
@@ -405,6 +411,7 @@ const NEED_SCENES = [
 const S = {
   identity: IDENTITIES[0],
   diff: 'easy',
+  catchSpeed: 'slow',  // 'slow' | 'mid' | 'fast' — 影響 Retro 模式速度
   mode: 'path',
   pathIdx: 0,
   qCount: 4,
@@ -419,6 +426,15 @@ const S = {
   live: null,
   pathList: PATH
 };
+
+// Retro sub-difficulty：拆 spawn（高=等更耐）vs speed（高=跌更快）
+// slow = SEN 預設（最易），fast = 挑戰
+const CATCH_SUB = {
+  slow: { spawnMul: 1.5,  speedMul: 0.4 },
+  mid:  { spawnMul: 1.0,  speedMul: 0.75 },
+  fast: { spawnMul: 0.65, speedMul: 1.0 }
+};
+function catchSub(){ return CATCH_SUB[S.catchSpeed] || CATCH_SUB.slow; }
 
 const $ = (id) => document.getElementById(id);
 
@@ -677,6 +693,15 @@ $('diff-row').onclick = (e)=>{
   [...$('diff-row').children].forEach(x=>x.classList.toggle('on', x===b));
   AudioFX.tap();
 };
+const csRow = $('catch-speed-row');
+if(csRow){
+  csRow.onclick = (e)=>{
+    const b = e.target.closest('[data-cs]'); if(!b) return;
+    S.catchSpeed = b.dataset.cs;
+    [...csRow.querySelectorAll('[data-cs]')].forEach(x=>x.classList.toggle('on', x===b));
+    AudioFX.tap();
+  };
+}
 document.querySelectorAll('.mode-btn').forEach(btn=>{
   btn.onclick = ()=>{
     S.mode = btn.dataset.mode;
@@ -1092,7 +1117,7 @@ function startCatch(){
     const ix = 12 + Math.random()*76;
     el.style.left = ix+'%'; el.style.top = '-10%';
     stage.appendChild(el);
-    const speed = (S.diff==='easy'?0.008:S.diff==='mid'?0.014:0.024) * (35+Math.random()*25);
+    const speed = (S.diff==='easy'?0.004:S.diff==='mid'?0.008:0.015) * (35+Math.random()*25) * catchSub().speedMul;
     items.push({el:el, id:id, x:ix, y:-10, speed:speed, poison:poison, good:(!poison && id===target)});
   }
   let last = performance.now();
@@ -1102,7 +1127,8 @@ function startCatch(){
     const slow = now < slowUntil ? 0.45 : 1;
     if(vx) x = Math.max(8, Math.min(92, x + vx * 0.09 * dt * slow));
     basket.style.left = x+'%';
-    if(now - lastSpawn > (S.diff==='easy'?2200:S.diff==='mid'?1600:850)/slow){
+    // spawn 距離 = base × spawnMul：spawnMul 大 = 等耐啲先跌下一個
+    if(now - lastSpawn > ((S.diff==='easy'?2800:S.diff==='mid'?2000:1200) * catchSub().spawnMul)/slow){
       spawn(); lastSpawn = now;
     }
     const bL = x-9, bR = x+9, magnet = combo>=2;
