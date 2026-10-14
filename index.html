@@ -244,31 +244,93 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
 .mode-btn.retro{background:linear-gradient(180deg,#1a1a2e,#16213e);border-color:#e94560;color:#eee}
 .mode-btn.retro .t{color:#ff6b81}.mode-btn.retro .d{color:#a0aec0}
 
-/* CART RUSH */
-.cart-stage{position:relative;width:100%;height:min(58vh,420px);border-radius:16px;overflow:hidden;
-  border:4px solid #1e5a8a;background:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 2px,transparent 2px 4px),
-  linear-gradient(180deg,#9ad0ff 0%,#c8e8ff 40%,#5bb86a 40%,#5bb86a 100%);}
-.cart-player{position:absolute;bottom:22%;width:52px;height:52px;margin-left:-26px;z-index:6;
-  font-size:2.2rem;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25));transition:left .05s linear;
+/* CART RUSH - 賽道對決 */
+.cart-stage{position:relative;width:100%;height:min(60vh,440px);border-radius:16px;overflow:hidden;
+  border:4px solid #1e5a8a;
+  background:linear-gradient(180deg,#87ceeb 0%,#b8e0d2 35%,transparent 35%),
+             linear-gradient(180deg,#a8d8a8 35%,#5a8a4a 100%);}
+.cart-sky{position:absolute;top:0;left:0;right:0;height:35%;background:linear-gradient(180deg,#87ceeb 0%,#b8e0d2 100%);z-index:0}
+.cart-cloud{position:absolute;background:rgba(255,255,255,.7);border-radius:50%;
+  width:60px;height:18px;top:8%;animation:cart-cloud 12s linear infinite}
+.cart-cloud::before,.cart-cloud::after{content:"";position:absolute;background:rgba(255,255,255,.7);border-radius:50%}
+.cart-cloud::before{width:30px;height:30px;top:-15px;left:8px}
+.cart-cloud::after{width:24px;height:24px;top:-10px;right:10px}
+.cart-cloud.c1{left:-80px;animation-delay:0s}
+.cart-cloud.c2{left:-80px;animation-delay:4s;top:18%}
+.cart-cloud.c3{left:-80px;animation-delay:8s;top:5%}
+@keyframes cart-cloud{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 100px))}}
+.cart-ai-lane{position:absolute;top:36%;left:0;right:0;height:30%;z-index:1;
+  background:repeating-linear-gradient(90deg,#3a3a3a 0 60px,#2a2a2a 60px 80px);
+  border-top:4px solid #fff;border-bottom:4px solid #fff}
+.cart-player-lane{position:absolute;top:68%;left:0;right:0;height:30%;z-index:1;
+  background:repeating-linear-gradient(90deg,#3a3a3a 0 60px,#2a2a2a 60px 80px);
+  border-top:4px solid #ffd93d;border-bottom:4px solid #ffd93d}
+.cart-ai-lane::before,.cart-player-lane::before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;
+  background:repeating-linear-gradient(90deg,transparent 0 50px,rgba(255,255,255,.4) 50px 52px,transparent 52px 100px);
+  animation:cart-lane-scroll .4s linear infinite}
+.cart-player-lane::before{animation-duration:.5s}
+@keyframes cart-lane-scroll{from{background-position:0 0}to{background-position:-100px 0}}
+.cart-finish{position:absolute;right:0;top:36%;height:62%;width:14px;z-index:2;
+  background:repeating-linear-gradient(0deg,#000 0 12px,#fff 12px 24px);
+  border-left:3px solid #333}
+.cart-finish::after{content:"🏁";position:absolute;top:50%;left:-12px;transform:translateY(-50%);
+  font-size:1.6rem}
+.cart-car{position:absolute;width:70px;height:50px;font-size:2.4rem;z-index:5;
+  display:flex;align-items:center;justify-content:center;left:8%;
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));transition:filter .2s}
+.cart-car-ai{top:38%;background:linear-gradient(180deg,#e94560,#b33048);
+  border:3px solid #6a1830;border-radius:10px 10px 18px 6px}
+.cart-car-ai::before{content:"🦊";position:absolute;font-size:1.8rem;top:2px}
+.cart-car-player{top:70%;background:linear-gradient(180deg,#ffd93d,#e0a800);
+  border:3px solid #6a4800;border-radius:6px 10px 6px 18px}
+.cart-car-player::before{content:"🛒";position:absolute;font-size:1.8rem;top:2px}
+.cart-car.boosting{filter:drop-shadow(0 0 14px #ff6b35) drop-shadow(0 3px 0 rgba(0,0,0,.35));
+  animation:cart-bob .15s ease-in-out infinite alternate}
+.cart-car.slowed{filter:grayscale(50%) drop-shadow(0 3px 0 rgba(0,0,0,.35))}
+@keyframes cart-bob{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+.cart-puff{position:absolute;width:0;height:24px;z-index:4;left:8%;opacity:0;
+  background:repeating-linear-gradient(90deg,#fff 0 8px,transparent 8px 16px);
+  border-radius:4px}
+.cart-puff-ai{top:calc(38% + 50px);background:repeating-linear-gradient(90deg,#aaa 0 6px,transparent 6px 12px)}
+.cart-puff-player{top:calc(70% + 50px)}
+.cart-puff.on{opacity:.9;width:80px;animation:cart-puff .25s linear infinite}
+.cart-puff.slow{background:radial-gradient(circle,#888 30%,transparent 70%)!important;
+  background-size:12px 12px!important;width:60px}
+@keyframes cart-puff{from{background-position:0 0}to{background-position:-16px 0}}
+.cart-items{position:absolute;inset:0;z-index:3;pointer-events:none}
+.cart-item{position:absolute;width:54px;height:54px;font-size:2.2rem;
   display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#ffd93d,#f5c542);border:3px solid #8a5a00;border-radius:50%;}
-.cart-player span{font-size:1.8rem;line-height:1}
-.cart-cart{position:absolute;bottom:6%;width:96px;height:60px;margin-left:-48px;z-index:5;
-  transition:left .05s linear;
-  display:flex;flex-direction:column;align-items:center}
-.cart-body{width:88px;height:42px;background:linear-gradient(180deg,#7eb8e8,#4a9fd4);border:3px solid #1e5a8a;
-  border-radius:6px 6px 12px 12px;box-shadow:0 3px 0 #1a4a72;position:relative}
-.cart-body::before{content:"";position:absolute;top:-8px;left:6px;right:6px;height:10px;
-  background:linear-gradient(180deg,#a8d4f5,#7eb8e8);border:2px solid #1e5a8a;border-radius:4px 4px 0 0}
-.cart-wheel{width:14px;height:14px;background:#333;border-radius:50%;border:2px solid #555;margin-top:2px}
-.cart-q-overlay{position:absolute;inset:0;z-index:20;background:rgba(20,50,80,.88);display:none;
-  flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:8px}
+  background:linear-gradient(180deg,#fff8dc,#f0d878);border:3px solid #8a5a00;border-radius:12px;
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.3));
+  top:70%;left:0;transform:translateY(-25px)}
+.cart-item.hit{opacity:0;transform:translateY(-25px) scale(.4);transition:all .4s}
+.cart-hud{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.cart-hud-row{display:flex;align-items:center;gap:10px;font-weight:900;color:#1e5a8a}
+.cart-hud-label{width:90px;font-size:1rem;display:flex;align-items:center;gap:6px}
+.cart-progress{flex:1;height:22px;background:#e8e8e8;border-radius:11px;overflow:hidden;
+  border:3px solid #1e5a8a;position:relative}
+.cart-progress-ai{height:100%;background:linear-gradient(90deg,#e94560,#b33048);
+  width:0%;transition:width .12s linear}
+.cart-progress-player{height:100%;background:linear-gradient(90deg,#ffd93d,#e0a800);
+  width:0%;transition:width .12s linear}
+.cart-status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;color:#333;font-weight:700;mix-blend-mode:multiply}
+.cart-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.78);color:#fff;padding:14px 26px;border-radius:16px;
+  font-size:1.4rem;font-weight:900;z-index:15;pointer-events:none;opacity:0;
+  transition:opacity .25s}
+.cart-banner.on{opacity:1}
+.cart-q-overlay{position:absolute;inset:0;z-index:20;background:rgba(20,50,80,.92);
+  display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:8px}
 .cart-q-overlay.on{display:flex}
-.cart-q-card{background:#fff;border:4px solid #2b8ad9;border-radius:22px;padding:20px 18px;text-align:center;max-width:380px;width:100%}
-.cart-q-target{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;font-size:1.15rem;font-weight:900;color:#1e5a8a}
+.cart-q-card{background:#fff;border:4px solid #2b8ad9;border-radius:22px;padding:20px 18px;
+  text-align:center;max-width:380px;width:100%}
+.cart-q-target{display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-bottom:10px;font-size:1.15rem;font-weight:900;color:#1e5a8a}
 .cart-q-target img{width:52px;height:52px;object-fit:cover;border-radius:10px;border:2px solid #7eb8e8}
 .cart-strikes{display:flex;gap:6px;justify-content:center;margin-bottom:8px}
-.cart-strike{width:36px;height:36px;border-radius:50%;background:#f0f0f0;border:3px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+.cart-strike{width:36px;height:36px;border-radius:50%;background:#f0f0f0;
+  border:3px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
 .cart-strike.lost{background:#fdecea;border-color:#e74c3c}
 
 
@@ -1440,194 +1502,196 @@ function startTalk(){
 
 /* ===== CART RUSH — gameplay-heavy mode ===== */
 function startCartRush(){
-  const goal      = diffPick(5, 6, 8);   // catches to win
-  const maxLives = 3;                    // wrong-answer lives
-  const poolN    = diffPick(2, 4, Math.min(6, ALL.length));
-  const basePool = shuffle(ALL).slice(0, poolN);
+  // 賽道對決 — 答啱加速 / 答錯減速 / 對手 AI 持續前進
+  const totalItems = diffPick(6, 7, 8);
+  const maxLives   = 3;
+  const TRACK      = 100;            // 0-100 賽道單位
+  const itemGap    = TRACK / (totalItems + 1);
 
-  // Build a queue of item targets
-  const queue = [];
-  for(let i=0;i<S.qCount;i++){
-    const ans = basePool[Math.floor(Math.random()*basePool.length)];
-    queue.push(ans);
-  }
-  let qi   = 0;       // queue index
-  let caught  = 0;
-  let lives   = maxLives;
+  // 6-8 條獨立題,每條唔同 item
+  const itemIds = shuffle(ALL).slice(0, Math.min(totalItems, ALL.length));
+
+  // State
+  let playerDist = 0;
+  let aiDist     = 0;
+  const basePlayerSpeed = 0.038;     // 38%/s → ~2.6s 完成
+  const aiSpeed         = 0.044;     // 44%/s → AI 略快,要用答啱先追到
+  let playerSpeed = basePlayerSpeed;
+  let boostMs = 0;
+  let slowMs  = 0;
   let strikes = 0;
+  let won     = false;
+  let lost    = false;
+  let finished= false;
+  let nextItemIdx = 0;
+  let stageLocked = false;
 
-  // Positions (percent)
-  let cartX = 50;
-  let cartVX = diffPick(0.045, 0.06, 0.08); // speed per ms
-  let playerX = 50;
-  let vx = 0;
-  let locked = false;   // true = question active, cart frozen
-
-  // DOM refs
   const body   = $('game-body');
   const prompt = $('prompt');
 
-  // Build stage HTML
   body.innerHTML = ''
     + '<div class="cart-stage" id="cart-stage">'
-    +   '<div class="cart-player" id="cart-player"><span>🐻</span></div>'
-    +   '<div class="cart-cart" id="cart-cart">'
-    +     '<div class="cart-body"></div>'
-    +     '<div style="display:flex;gap:8px"><div class="cart-wheel"></div><div class="cart-wheel"></div></div>'
+    +   '<div class="cart-sky">'
+    +     '<div class="cart-cloud c1"></div>'
+    +     '<div class="cart-cloud c2"></div>'
+    +     '<div class="cart-cloud c3"></div>'
     +   '</div>'
+    +   '<div class="cart-ai-lane"></div>'
+    +   '<div class="cart-player-lane"></div>'
+    +   '<div class="cart-finish"></div>'
+    +   '<div class="cart-puff cart-puff-ai" id="cart-puff-ai"></div>'
+    +   '<div class="cart-puff cart-puff-player" id="cart-puff-player"></div>'
+    +   '<div class="cart-items" id="cart-items"></div>'
+    +   '<div class="cart-car cart-car-ai" id="cart-car-ai"></div>'
+    +   '<div class="cart-car cart-car-player" id="cart-car-player"></div>'
+    +   '<div class="cart-banner" id="cart-banner"></div>'
     +   '<div class="cart-q-overlay" id="cart-overlay">'
     +     '<div class="cart-q-card">'
     +       '<div class="cart-strikes" id="cart-strikes"></div>'
     +       '<div class="cart-q-target" id="cart-q-target"></div>'
-    +       '<div class="opts n2" id="cart-q-grid" style="margin-top:8px"></div>'
-    +       '<div class="fb" id="cart-fb" style="margin-top:8px"></div>'
+    +       '<div class="opts n2" id="cart-q-grid"></div>'
+    +       '<div class="fb" id="cart-fb"></div>'
     +     '</div>'
     +   '</div>'
     + '</div>'
-    + '<div class="retro-ctrl">'
-    +   '<button type="button" class="big" id="cr-left">&lt;</button>'
-    +   '<button type="button" class="big" id="cr-right">&gt;</button>'
+    + '<div class="cart-hud">'
+    +   '<div class="cart-hud-row">'
+    +     '<span class="cart-hud-label">🦊 對手</span>'
+    +     '<div class="cart-progress"><div class="cart-progress-ai" id="cart-progress-ai"></div></div>'
+    +   '</div>'
+    +   '<div class="cart-hud-row">'
+    +     '<span class="cart-hud-label">🛒 我</span>'
+    +     '<div class="cart-progress"><div class="cart-progress-player" id="cart-progress-player"></div></div>'
+    +   '</div>'
     + '</div>';
 
-  const stage  = $('cart-stage');
-  const player = $('cart-player');
-  const cart   = $('cart-cart');
-  const overlay= $('cart-overlay');
+  const stage       = $('cart-stage');
+  const carPlayer   = $('cart-car-player');
+  const carAi       = $('cart-car-ai');
+  const itemsEl     = $('cart-items');
+  const overlay     = $('cart-overlay');
+  const progPlayer  = $('cart-progress-player');
+  const progAi      = $('cart-progress-ai');
+  const puffPlayer  = $('cart-puff-player');
+  const puffAi      = $('cart-puff-ai');
+  const banner      = $('cart-banner');
 
-  // Update HUD
-  $('hud-q').textContent = '0/' + goal;
-  $('hud-score').textContent = '★ ' + S.correct;
-
-  // ----- controls (same pattern as catch basket) -----
-  const keys = {l:false, r:false};
-  function bindHold(el, dir){
-    const down = (e)=>{ e.preventDefault(); if(dir<0) keys.l=true; else keys.r=true; vx=dir; };
-    const up  = ()=>{ keys.l=false; keys.r=false; vx=0; };
-    el.addEventListener('pointerdown', down);
-    el.addEventListener('pointerup',   up);
-    el.addEventListener('pointerleave',up);
-    el.addEventListener('pointercancel',up);
+  // 放 item 入賽道
+  for(let i=0; i<totalItems; i++){
+    const id = itemIds[i];
+    const d  = document.createElement('div');
+    d.className = 'cart-item';
+    d.dataset.worldX = itemGap * (i+1);
+    d.dataset.idx = i;
+    d.dataset.id  = id;
+    d.innerHTML = '📦';
+    itemsEl.appendChild(d);
   }
-  bindHold($('cr-left'),  -1);
-  bindHold($('cr-right'),  1);
-  stage.addEventListener('pointerdown', (e)=>{
-    const r = stage.getBoundingClientRect();
-    vx = (e.clientX < r.left + r.width/2) ? -1 : 1;
-  });
-  stage.addEventListener('pointerup', ()=>{ vx=0; });
-  const onKey = (e)=>{
-    if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A'){ keys.l=true; vx=-1; e.preventDefault(); }
-    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){ keys.r=true; vx=1;  e.preventDefault(); }
-  };
-  const onKeyUp = (e)=>{
-    if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A'){ keys.l=false; }
-    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){ keys.r=false; }
-    if(!keys.l && !keys.r) vx=0;
-  };
-  window.addEventListener('keydown', onKey);
-  window.addEventListener('keyup',   onKeyUp);
 
-  // ----- question helpers -----
+  function showBanner(text, ms){
+    banner.textContent = text;
+    banner.classList.add('on');
+    clearTimeout(showBanner._t);
+    showBanner._t = setTimeout(function(){ banner.classList.remove('on'); }, ms||900);
+  }
+
   function renderStrikes(){
     const el = $('cart-strikes');
     if(!el) return;
     let h='';
-    for(let i=0;i<maxLives;i++) h+='<div class="cart-strike'+(i<lives?'':' lost')+'>'+(i<lives?'❤':'💔')+'</div>';
+    for(let i=0;i<maxLives;i++) h+='<div class="cart-strike'+(i<maxLives-strikes?'':' lost')+'>'+(i<maxLives-strikes?'❤':'💔')+'</div>';
     el.innerHTML=h;
   }
 
-  function currentTarget(){
-    return queue[qi % queue.length];
+  function applyBoost(){
+    boostMs = 1700;
+    playerSpeed = basePlayerSpeed * 1.95;
+    carPlayer.classList.add('boosting');
+    puffPlayer.classList.add('on');
+    setTimeout(function(){ carPlayer.classList.remove('boosting'); puffPlayer.classList.remove('on'); }, 1700);
+  }
+  function applySlow(){
+    slowMs = 1300;
+    playerSpeed = basePlayerSpeed * 0.4;
+    carPlayer.classList.add('slowed');
+    puffPlayer.classList.add('on','slow');
+    setTimeout(function(){ carPlayer.classList.remove('slowed'); puffPlayer.classList.remove('on','slow'); }, 1300);
   }
 
-  function showQuestion(){
-    const ans = currentTarget();
+  function showQuestion(itemIdx, itemId){
+    const ans = itemId;
     const ph  = '買' + ITEMS[ans].label;
     S.answerSpeak = ph;
     S.cur = {type:'cart', phrase:ph, ans:ans};
 
-    prompt.innerHTML = '追到購物車！揀正確嘢：<mark>'+ph+'</mark>';
+    prompt.innerHTML = '答啱加速！<mark>'+ph+'</mark>';
     speak('我要買' + ITEMS[ans].label);
 
     $('cart-q-target').innerHTML = '<img src="'+ITEMS[ans].img+'" alt=""><span>'+ph+'</span>';
     renderStrikes();
 
-    // Build 2-option grid
     const nopt = nOpts();
-    const choices = pickChoices(ans, basePool, nopt);
+    const choices = pickChoices(ans, ALL, nopt);
     const grid = $('cart-q-grid');
     grid.className = 'opts ' + optionCountClass(choices.length);
     grid.innerHTML = '';
+    stageLocked = true;
+
     choices.forEach(function(id, i){
       const btn = document.createElement('button');
       btn.type='button'; btn.className='opt';
       btn.innerHTML = '<span class="badge">'+LETTERS[i]+'</span><img src="'+ITEMS[id].img+'" alt=""><div class="lab">'+LETTERS[i]+'. '+ITEMS[id].label+'</div>';
       btn.onclick = function(){
-        if(locked) return;
+        if(!stageLocked || btn.disabled) return;
         const ok = id===ans;
-        locked=true;
+        // 鎖哂所有 button
+        Array.prototype.forEach.call(grid.querySelectorAll('.opt'), function(c){ c.disabled = true; });
         S.answered++;
-        S.locked=true;
         if(ok){
           S.correct++;
-          caught++;
           AudioFX.ok();
-          $('cart-fb').textContent = '✅ 啱！' + ph;
-          $('cart-fb').className = 'fb ok';
+          btn.classList.add('correct');
+          $('cart-fb').textContent = '✅ 加速！' + ph;
+          $('cart-fb').className   = 'fb ok';
           $('hud-score').textContent = '★ ' + S.correct;
-          $('hud-q').textContent = caught+'/'+goal;
-          // Dismiss overlay after short delay
+          $('hud-q').textContent    = (nextItemIdx+1) + '/' + totalItems;
+          showBanner('🚀 加速！', 700);
+          applyBoost();
           setTimeout(function(){
             overlay.classList.remove('on');
-            prompt.innerHTML = '快！追車！<mark>'+ph+'</mark>';
-            S.locked=false;
-            locked=false;
-            qi++;
-            if(caught >= goal){
-              $('prompt').innerHTML = '🎉 完成！';
-              setTimeout(finishLiveMode, 900);
-            }
-          }, 700);
+            stageLocked = false;
+            nextItemIdx++;
+            // 隱藏撞到嘅 item
+            const it = itemsEl.querySelector('[data-idx="'+itemIdx+'"]');
+            if(it){ it.classList.add('hit'); }
+            prompt.innerHTML = '快啲答！對手追緊！';
+          }, 900);
         } else {
           strikes++;
-          lives = Math.max(0, maxLives - strikes);
           AudioFX.bad();
           btn.classList.add('wrong');
+          // 標示啱嗰粒 + 解返佢俾學生再撳
           Array.prototype.forEach.call(grid.querySelectorAll('.opt'), function(c,ci){
-            if(choices[ci]===ans) c.classList.add('correct');
-            c.classList.add('disabled');
+            if(choices[ci]===ans){
+              c.classList.add('correct');
+              c.disabled = false;
+            }
           });
-          $('cart-fb').textContent = '❌ 應該：'+ph;
-          $('cart-fb').className = 'fb bad';
+          $('cart-fb').textContent = '❌ 應該：'+ph + '（撳啱嗰粒先繼續）';
+          $('cart-fb').className   = 'fb bad';
+          showBanner('💨 慢咗！', 700);
+          applySlow();
           renderStrikes();
-          // Stay locked until right answer
-          // Show retry prompt
-          prompt.innerHTML = '答啱先解鎖：<mark>'+ph+'</mark>';
-          if(lives<=0){
-            // GAME OVER
+          if(strikes >= maxLives){
+            // 輸咗,等 overlay 顯示完就結束
             setTimeout(function(){
-              $('prompt').innerHTML = '💔 GAME OVER';
-              setTimeout(endGame, 1200);
-            }, 600);
+              overlay.classList.remove('on');
+              stageLocked = false;
+              finishRace(false);
+            }, 1400);
           } else {
-            // Show "答啱先繼續" overlay again after a moment
-            setTimeout(function(){
-              // Re-enable only the correct button for retry
-              Array.prototype.forEach.call(grid.querySelectorAll('.opt'), function(c){ c.classList.remove('disabled','wrong'); });
-              const allBtns = grid.querySelectorAll('.opt');
-              // Find correct and re-enable everything, but mark wrong permanently
-              Array.prototype.forEach.call(allBtns, function(c,ci){
-                if(choices[ci]===ans){
-                  c.classList.remove('wrong','disabled');
-                  c.classList.add('correct');
-                } else {
-                  c.classList.add('disabled');
-                }
-              });
-              // Re-enable correct button only for retry
-              Array.prototype.forEach.call(allBtns, function(c){ c.classList.remove('disabled'); });
-              locked=false;
-            }, 800);
+            prompt.innerHTML = '答啱先繼續：<mark>'+ph+'</mark>';
+            // 唔關 overlay,等學生再撳啱嗰粒
           }
         }
       };
@@ -1637,44 +1701,103 @@ function startCartRush(){
     overlay.classList.add('on');
   }
 
-  // ----- main game loop -----
+  function finishRace(playerWon){
+    if(finished) return;
+    finished = true;
+    if(playerWon){
+      won = true;
+      prompt.innerHTML = '🏆 你贏咗！';
+      speak('你贏咗');
+      showBanner('🏆 衝線！', 1500);
+    } else {
+      lost = true;
+      prompt.innerHTML = '💔 對手贏咗';
+      speak('對手贏咗');
+      showBanner('💔 輸咗', 1500);
+    }
+    setTimeout(finishLiveMode, 1400);
+  }
+
+  // ----- main loop -----
   let last = performance.now();
-  let caughtThisRound = false;
+
+  function positionItems(){
+    const sw = stage.clientWidth || 600;
+    // 視窗內可見 ~32 個 track 單位(在 player 前)
+    const visibleUnits = 32;
+    const pxPerUnit = sw / visibleUnits;
+    Array.prototype.forEach.call(itemsEl.children, function(d){
+      if(d.classList.contains('hit')) return;
+      const wx = parseFloat(d.dataset.worldX);
+      const screenX = (wx - playerDist) * pxPerUnit;
+      if(screenX < -80 || screenX > sw + 80){
+        d.style.display = 'none';
+      } else {
+        d.style.display = '';
+        d.style.left = screenX + 'px';
+      }
+    });
+  }
 
   function loop(now){
     if(!S.live || S.live.kind!=='cart') return;
     const dt = Math.min(32, now - last);
     last = now;
 
-    // Move player
-    if(vx) playerX = Math.max(8, Math.min(92, playerX + vx * 0.12 * dt));
-    player.style.left = playerX+'%';
-
-    // Move cart (only when not locked)
-    if(!locked){
-      cartX += cartVX * dt;
-      if(cartX >= 92){ cartX = 92; cartVX = -Math.abs(cartVX); }
-      if(cartX <= 8) { cartX = 8;  cartVX =  Math.abs(cartVX); }
-      cart.style.left = cartX+'%';
-
-      // Check collision (player at ~55%, cart at ~78% vertical)
-      const overlap = Math.abs(playerX - cartX) < 14;
-      if(overlap && !caughtThisRound){
-        caughtThisRound = true;
-        // Trigger question
-        showQuestion();
+    if(!finished){
+      // 速度衰減
+      if(boostMs > 0){
+        boostMs -= dt;
+        if(boostMs <= 0) playerSpeed = basePlayerSpeed;
+      } else if(slowMs > 0){
+        slowMs -= dt;
+        if(slowMs <= 0) playerSpeed = basePlayerSpeed;
       }
-      if(!overlap){
-        caughtThisRound = false;
+
+      // AI 永遠行(就算 locked)
+      aiDist += aiSpeed * dt;
+      if(aiDist > TRACK) aiDist = TRACK;
+
+      if(!stageLocked){
+        // Player 行
+        playerDist += playerSpeed * dt;
+        if(playerDist > TRACK) playerDist = TRACK;
+
+        // 撞 item
+        while(nextItemIdx < totalItems){
+          const d = itemsEl.children[nextItemIdx];
+          if(!d) break;
+          if(d.classList.contains('hit')){ nextItemIdx++; continue; }
+          const wx = parseFloat(d.dataset.worldX);
+          if(playerDist >= wx - 0.5 && playerDist <= wx + 3){
+            const id = parseInt(d.dataset.id, 10);
+            showQuestion(nextItemIdx, id);
+            break;
+          } else if(playerDist < wx - 0.5){
+            break;
+          } else {
+            nextItemIdx++;
+          }
+        }
+
+        // Win/Lose
+        if(playerDist >= TRACK) finishRace(true);
+        else if(aiDist >= TRACK) finishRace(false);
       }
+
+      // Update HUD
+      progPlayer.style.width = (playerDist / TRACK * 100) + '%';
+      progAi.style.width     = (aiDist     / TRACK * 100) + '%';
+      positionItems();
     }
 
     S.live.raf = requestAnimationFrame(loop);
   }
 
-  // Kick off
-  prompt.innerHTML = '追到購物車就答題！';
-  S.live = {kind:'cart', raf:0, onKey:onKey, onKeyUp:onKeyUp};
+  $('hud-q').textContent    = '0/' + totalItems;
+  $('hud-score').textContent = '★ 0';
+  prompt.innerHTML = '🏁 賽道對決！答啱加速 / 答錯慢';
+  S.live = {kind:'cart', raf:0};
   S.live.raf = requestAnimationFrame(loop);
 }
 
