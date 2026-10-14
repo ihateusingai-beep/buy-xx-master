@@ -760,7 +760,7 @@ function startMode(mode){
   $('hud-mode').textContent = pathish ? (MODE_LABEL[S.mode] + ' · ' + MODE_LABEL[mode]) : MODE_LABEL[mode];
   updatePathProgress();
   clearRoundUI();
-  if(mode==='catch' || mode==='run' || mode==='talk'){
+  if(mode==='catch' || mode==='run' || mode==='talk' || mode==='cart'){
     startLiveMode(mode);
     return;
   }
