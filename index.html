@@ -244,6 +244,33 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
 .mode-btn.retro{background:linear-gradient(180deg,#1a1a2e,#16213e);border-color:#e94560;color:#eee}
 .mode-btn.retro .t{color:#ff6b81}.mode-btn.retro .d{color:#a0aec0}
 
+/* CART RUSH */
+.cart-stage{position:relative;width:100%;height:min(58vh,420px);border-radius:16px;overflow:hidden;
+  border:4px solid #1e5a8a;background:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 2px,transparent 2px 4px),
+  linear-gradient(180deg,#9ad0ff 0%,#c8e8ff 40%,#5bb86a 40%,#5bb86a 100%);}
+.cart-player{position:absolute;bottom:22%;width:52px;height:52px;margin-left:-26px;z-index:6;
+  font-size:2.2rem;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25));transition:left .05s linear;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#ffd93d,#f5c542);border:3px solid #8a5a00;border-radius:50%;}
+.cart-player span{font-size:1.8rem;line-height:1}
+.cart-cart{position:absolute;bottom:6%;width:96px;height:60px;margin-left:-48px;z-index:5;
+  transition:left .05s linear;
+  display:flex;flex-direction:column;align-items:center}
+.cart-body{width:88px;height:42px;background:linear-gradient(180deg,#7eb8e8,#4a9fd4);border:3px solid #1e5a8a;
+  border-radius:6px 6px 12px 12px;box-shadow:0 3px 0 #1a4a72;position:relative}
+.cart-body::before{content:"";position:absolute;top:-8px;left:6px;right:6px;height:10px;
+  background:linear-gradient(180deg,#a8d4f5,#7eb8e8);border:2px solid #1e5a8a;border-radius:4px 4px 0 0}
+.cart-wheel{width:14px;height:14px;background:#333;border-radius:50%;border:2px solid #555;margin-top:2px}
+.cart-q-overlay{position:absolute;inset:0;z-index:20;background:rgba(20,50,80,.88);display:none;
+  flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:8px}
+.cart-q-overlay.on{display:flex}
+.cart-q-card{background:#fff;border:4px solid #2b8ad9;border-radius:22px;padding:20px 18px;text-align:center;max-width:380px;width:100%}
+.cart-q-target{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;font-size:1.15rem;font-weight:900;color:#1e5a8a}
+.cart-q-target img{width:52px;height:52px;object-fit:cover;border-radius:10px;border:2px solid #7eb8e8}
+.cart-strikes{display:flex;gap:6px;justify-content:center;margin-bottom:8px}
+.cart-strike{width:36px;height:36px;border-radius:50%;background:#f0f0f0;border:3px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+.cart-strike.lost{background:#fdecea;border-color:#e74c3c}
+
 
 </style>
 </head>
@@ -295,6 +322,7 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
           <button class="mode-btn retro" data-mode="catch" type="button"><div class="t">接貨小店員</div><div class="d">左右接買XX</div></button>
           <button class="mode-btn retro" data-mode="talk" type="button"><div class="t">像素店員</div><div class="d">對話砌買XX</div></button>
           <button class="mode-btn retro" data-mode="run" type="button"><div class="t">商場走線</div><div class="d">換線踩正確門</div></button>
+          <button class="mode-btn retro" data-mode="cart" type="button"><div class="t">🛒 購物車極速</div><div class="d">追車答題・錯停</div></button>
         </div>
       </details>
       <details class="teacher no-print">
@@ -396,7 +424,8 @@ const PATH = ['listen','shop','judge','build','need'];
 const PATH_RETRO = ['catch','talk','run'];
 const MODE_LABEL = {
   path:'一條龍', 'path-retro':'Retro一條龍', listen:'聽圖選', shop:'店員任務', judge:'啱定錯', build:'砌短語', need:'要定唔要',
-  catch:'接貨小店員', talk:'像素店員', run:'商場走線'
+  catch:'接貨小店員', talk:'像素店員', run:'商場走線',
+  cart:'購物車極速'
 };
 const NEED_SCENES = [
   {q:'書包破咗，去買新書包？', good:'買書包', bad:'一次買十個書包', goodId:'bag', why:'有需要先買'},
@@ -590,7 +619,8 @@ const SPEAK_FOR = {
   need: function(q){ return q.scene.q; },
   catch: function(){ return S.answerSpeak || '接買嘅嘢'; },
   run: function(){ return S.answerSpeak || '行正確門'; },
-  talk: function(){ return S.answerSpeak || '買嘢'; }
+  talk: function(){ return S.answerSpeak || '買嘢'; },
+  cart: function(){ return S.answerSpeak || '我要買XX'; }
 };
 function startLiveMode(mode){
   S.queue = [];
@@ -598,6 +628,7 @@ function startLiveMode(mode){
   if(mode==='catch') startCatch();
   else if(mode==='run') startRunway();
   else if(mode==='talk') startTalk();
+  else if(mode==='cart') startCartRush();
 }
 
 function show(id){
@@ -1405,6 +1436,246 @@ function startTalk(){
 
   S.live={kind:'talk'};
   render();
+}
+
+/* ===== CART RUSH — gameplay-heavy mode ===== */
+function startCartRush(){
+  const goal      = diffPick(5, 6, 8);   // catches to win
+  const maxLives = 3;                    // wrong-answer lives
+  const poolN    = diffPick(2, 4, Math.min(6, ALL.length));
+  const basePool = shuffle(ALL).slice(0, poolN);
+
+  // Build a queue of item targets
+  const queue = [];
+  for(let i=0;i<S.qCount;i++){
+    const ans = basePool[Math.floor(Math.random()*basePool.length)];
+    queue.push(ans);
+  }
+  let qi   = 0;       // queue index
+  let caught  = 0;
+  let lives   = maxLives;
+  let strikes = 0;
+
+  // Positions (percent)
+  let cartX = 50;
+  let cartVX = diffPick(0.045, 0.06, 0.08); // speed per ms
+  let playerX = 50;
+  let vx = 0;
+  let locked = false;   // true = question active, cart frozen
+
+  // DOM refs
+  const body   = $('game-body');
+  const prompt = $('prompt');
+
+  // Build stage HTML
+  body.innerHTML = ''
+    + '<div class="cart-stage" id="cart-stage">'
+    +   '<div class="cart-player" id="cart-player"><span>🐻</span></div>'
+    +   '<div class="cart-cart" id="cart-cart">'
+    +     '<div class="cart-body"></div>'
+    +     '<div style="display:flex;gap:8px"><div class="cart-wheel"></div><div class="cart-wheel"></div></div>'
+    +   '</div>'
+    +   '<div class="cart-q-overlay" id="cart-overlay">'
+    +     '<div class="cart-q-card">'
+    +       '<div class="cart-strikes" id="cart-strikes"></div>'
+    +       '<div class="cart-q-target" id="cart-q-target"></div>'
+    +       '<div class="opts n2" id="cart-q-grid" style="margin-top:8px"></div>'
+    +       '<div class="fb" id="cart-fb" style="margin-top:8px"></div>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="retro-ctrl">'
+    +   '<button type="button" class="big" id="cr-left">&lt;</button>'
+    +   '<button type="button" class="big" id="cr-right">&gt;</button>'
+    + '</div>';
+
+  const stage  = $('cart-stage');
+  const player = $('cart-player');
+  const cart   = $('cart-cart');
+  const overlay= $('cart-overlay');
+
+  // Update HUD
+  $('hud-q').textContent = '0/' + goal;
+  $('hud-score').textContent = '★ ' + S.correct;
+
+  // ----- controls (same pattern as catch basket) -----
+  const keys = {l:false, r:false};
+  function bindHold(el, dir){
+    const down = (e)=>{ e.preventDefault(); if(dir<0) keys.l=true; else keys.r=true; vx=dir; };
+    const up  = ()=>{ keys.l=false; keys.r=false; vx=0; };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointerup',   up);
+    el.addEventListener('pointerleave',up);
+    el.addEventListener('pointercancel',up);
+  }
+  bindHold($('cr-left'),  -1);
+  bindHold($('cr-right'),  1);
+  stage.addEventListener('pointerdown', (e)=>{
+    const r = stage.getBoundingClientRect();
+    vx = (e.clientX < r.left + r.width/2) ? -1 : 1;
+  });
+  stage.addEventListener('pointerup', ()=>{ vx=0; });
+  const onKey = (e)=>{
+    if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A'){ keys.l=true; vx=-1; e.preventDefault(); }
+    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){ keys.r=true; vx=1;  e.preventDefault(); }
+  };
+  const onKeyUp = (e)=>{
+    if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A'){ keys.l=false; }
+    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){ keys.r=false; }
+    if(!keys.l && !keys.r) vx=0;
+  };
+  window.addEventListener('keydown', onKey);
+  window.addEventListener('keyup',   onKeyUp);
+
+  // ----- question helpers -----
+  function renderStrikes(){
+    const el = $('cart-strikes');
+    if(!el) return;
+    let h='';
+    for(let i=0;i<maxLives;i++) h+='<div class="cart-strike'+(i<lives?'':' lost')+'>'+(i<lives?'❤':'💔')+'</div>';
+    el.innerHTML=h;
+  }
+
+  function currentTarget(){
+    return queue[qi % queue.length];
+  }
+
+  function showQuestion(){
+    const ans = currentTarget();
+    const ph  = '買' + ITEMS[ans].label;
+    S.answerSpeak = ph;
+    S.cur = {type:'cart', phrase:ph, ans:ans};
+
+    prompt.innerHTML = '追到購物車！揀正確嘢：<mark>'+ph+'</mark>';
+    speak('我要買' + ITEMS[ans].label);
+
+    $('cart-q-target').innerHTML = '<img src="'+ITEMS[ans].img+'" alt=""><span>'+ph+'</span>';
+    renderStrikes();
+
+    // Build 2-option grid
+    const nopt = nOpts();
+    const choices = pickChoices(ans, basePool, nopt);
+    const grid = $('cart-q-grid');
+    grid.className = 'opts ' + optionCountClass(choices.length);
+    grid.innerHTML = '';
+    choices.forEach(function(id, i){
+      const btn = document.createElement('button');
+      btn.type='button'; btn.className='opt';
+      btn.innerHTML = '<span class="badge">'+LETTERS[i]+'</span><img src="'+ITEMS[id].img+'" alt=""><div class="lab">'+LETTERS[i]+'. '+ITEMS[id].label+'</div>';
+      btn.onclick = function(){
+        if(locked) return;
+        const ok = id===ans;
+        locked=true;
+        S.answered++;
+        S.locked=true;
+        if(ok){
+          S.correct++;
+          caught++;
+          AudioFX.ok();
+          $('cart-fb').textContent = '✅ 啱！' + ph;
+          $('cart-fb').className = 'fb ok';
+          $('hud-score').textContent = '★ ' + S.correct;
+          $('hud-q').textContent = caught+'/'+goal;
+          // Dismiss overlay after short delay
+          setTimeout(function(){
+            overlay.classList.remove('on');
+            prompt.innerHTML = '快！追車！<mark>'+ph+'</mark>';
+            S.locked=false;
+            locked=false;
+            qi++;
+            if(caught >= goal){
+              $('prompt').innerHTML = '🎉 完成！';
+              setTimeout(finishLiveMode, 900);
+            }
+          }, 700);
+        } else {
+          strikes++;
+          lives = Math.max(0, maxLives - strikes);
+          AudioFX.bad();
+          btn.classList.add('wrong');
+          Array.prototype.forEach.call(grid.querySelectorAll('.opt'), function(c,ci){
+            if(choices[ci]===ans) c.classList.add('correct');
+            c.classList.add('disabled');
+          });
+          $('cart-fb').textContent = '❌ 應該：'+ph;
+          $('cart-fb').className = 'fb bad';
+          renderStrikes();
+          // Stay locked until right answer
+          // Show retry prompt
+          prompt.innerHTML = '答啱先解鎖：<mark>'+ph+'</mark>';
+          if(lives<=0){
+            // GAME OVER
+            setTimeout(function(){
+              $('prompt').innerHTML = '💔 GAME OVER';
+              setTimeout(endGame, 1200);
+            }, 600);
+          } else {
+            // Show "答啱先繼續" overlay again after a moment
+            setTimeout(function(){
+              // Re-enable only the correct button for retry
+              Array.prototype.forEach.call(grid.querySelectorAll('.opt'), function(c){ c.classList.remove('disabled','wrong'); });
+              const allBtns = grid.querySelectorAll('.opt');
+              // Find correct and re-enable everything, but mark wrong permanently
+              Array.prototype.forEach.call(allBtns, function(c,ci){
+                if(choices[ci]===ans){
+                  c.classList.remove('wrong','disabled');
+                  c.classList.add('correct');
+                } else {
+                  c.classList.add('disabled');
+                }
+              });
+              // Re-enable correct button only for retry
+              Array.prototype.forEach.call(allBtns, function(c){ c.classList.remove('disabled'); });
+              locked=false;
+            }, 800);
+          }
+        }
+      };
+      grid.appendChild(btn);
+    });
+
+    overlay.classList.add('on');
+  }
+
+  // ----- main game loop -----
+  let last = performance.now();
+  let caughtThisRound = false;
+
+  function loop(now){
+    if(!S.live || S.live.kind!=='cart') return;
+    const dt = Math.min(32, now - last);
+    last = now;
+
+    // Move player
+    if(vx) playerX = Math.max(8, Math.min(92, playerX + vx * 0.12 * dt));
+    player.style.left = playerX+'%';
+
+    // Move cart (only when not locked)
+    if(!locked){
+      cartX += cartVX * dt;
+      if(cartX >= 92){ cartX = 92; cartVX = -Math.abs(cartVX); }
+      if(cartX <= 8) { cartX = 8;  cartVX =  Math.abs(cartVX); }
+      cart.style.left = cartX+'%';
+
+      // Check collision (player at ~55%, cart at ~78% vertical)
+      const overlap = Math.abs(playerX - cartX) < 14;
+      if(overlap && !caughtThisRound){
+        caughtThisRound = true;
+        // Trigger question
+        showQuestion();
+      }
+      if(!overlap){
+        caughtThisRound = false;
+      }
+    }
+
+    S.live.raf = requestAnimationFrame(loop);
+  }
+
+  // Kick off
+  prompt.innerHTML = '追到購物車就答題！';
+  S.live = {kind:'cart', raf:0, onKey:onKey, onKeyUp:onKeyUp};
+  S.live.raf = requestAnimationFrame(loop);
 }
 
 function endGame(){
