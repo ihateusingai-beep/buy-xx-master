@@ -535,6 +535,7 @@ const S = {
   pathIdx: 0,
   qCount: 4,
   qIndex: 0,
+  recSeq: 0,        // 記錄層用：跨關卡單調遞增，唔會因 path 每關重設 qIndex 而撞 key
   correct: 0,
   answered: 0,
   locked: false,
@@ -780,6 +781,100 @@ function pickPool(mode){
   return SELECTABLE;
 }
 
+/* ===== 記錄層 Record（評估用途）=====
+ * 每題留低：首次答對、重試次數、詞彙範圍、句子。
+ * localStorage 單機即可，全部 key 帶 .v1 版本後綴，日後改結構可並行讀取。
+ * 唔計分、唔影響遊戲——純粹記低，唔參與任何回饋。
+ */
+const RECORD_KEY   = 'bxm.records.v1';
+const SESSION_KEY  = 'bxm.session.v1';
+
+function storeGet(key, fallback){
+  try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+  catch(e){ return fallback; }
+}
+function storeSet(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); return true; }
+  catch(e){ console.warn('[Record] 寫入失敗', key, e); return false; }
+}
+
+const Record = {
+  session: null,
+  _buf: Object.create(null),
+
+  start(meta){
+    this.session = {
+      id: 's-' + Date.now().toString(36),
+      ts: new Date().toISOString(),
+      student: (meta && meta.student) || 'A',
+      arcade: (meta && meta.arcade) || '',
+      diff: S.diff,
+      vocabScope: S.vocabScope,
+      qCount: S.qCount,
+      pathList: (S.pathList || []).slice(),
+      records: []
+    };
+    this._buf = Object.create(null);
+    storeSet(SESSION_KEY, this.session);
+  },
+
+  // q = S.cur。retry 唔會換 S.recSeq，所以同一題嘅多次作答會歸併成一筆。
+  attempt(ok, q){
+    if(!this.session || !q || q.ans == null) return;
+    const key = String(S.recSeq);
+    let r = this._buf[key];
+    if(!r){
+      const it = ITEMS[q.ans] || {};
+      r = {
+        seq: this.session.records.length + 1,
+        itemId: q.ans,
+        word: it.label || '',
+        cat: it.cat || '',
+        hasImg: !!it.img,
+        mode: q.type,
+        diff: S.diff,
+        vocabScope: S.vocabScope,
+        stem: q.stem || '',
+        target: q.phrase || q.ansText || '',
+        // D9：砌短語會把「買 + 答案」直接顯示喺題目提示，即答案喺畫面上。
+        // 報告唔可以當成真正產出，要標註。
+        answerVisible: q.type === 'build',
+        attempts: 0,
+        correct: false,
+        firstTry: false
+      };
+      this._buf[key] = r;
+      this.session.records.push(r);
+    }
+    r.attempts++;
+    if(ok){ r.correct = true; r.firstTry = (r.attempts === 1); }
+    storeSet(SESSION_KEY, this.session);
+  },
+
+  finish(){
+    if(!this.session) return null;
+    const done = this.session;
+    // 純 arcade 段落冇經 onPick，會係 0 筆記錄 — 唔好污染評估資料
+    if(done.records.length){
+      const all = storeGet(RECORD_KEY, []);
+      all.push(done);
+      storeSet(RECORD_KEY, all);
+    }
+    try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+    this.session = null;
+    this._buf = Object.create(null);
+    return done;
+  },
+
+  load(){ return storeGet(RECORD_KEY, []); },
+
+  clear(){
+    try{ localStorage.removeItem(RECORD_KEY); localStorage.removeItem(SESSION_KEY); }catch(e){}
+    this.session = null;
+    this._buf = Object.create(null);
+  }
+};
+
 /* TTS */
 let voices = [];
 function loadVoices(){ voices = speechSynthesis.getVoices() || []; }
@@ -897,8 +992,9 @@ function currentMode(){
 }
 function startRun(){
   stopLive();
-  S.pathIdx = 0; S.correct=0; S.answered=0; S.qIndex=0;
+  S.pathIdx = 0; S.correct=0; S.answered=0; S.qIndex=0; S.recSeq=0;
   S.pathList = (S.mode==='path-retro') ? PATH_RETRO : PATH;
+  Record.start({ student: S.identity.name, arcade: S.mode });
   startMode(currentMode());
 }
 function startMode(mode){
@@ -987,6 +1083,7 @@ function nextQuestion(){
     return;
   }
   S.locked=false; S.pickOk=false; S.cur = S.queue[S.qIndex];
+  S.recSeq++;   // 記錄層題序（retry 唔會經過呢度，所以唔會重覆計）
   $('hud-q').textContent = `${S.qIndex+1}/${S.queue.length}`;
   $('hud-score').textContent = '★ ' + S.correct;
   clearRoundUI();
@@ -1169,6 +1266,7 @@ function renderNeed(q, body){
 
 function onPick(ok, el, container, ansId, shopMode, extraHL){
   if(S.locked) return;
+  Record.attempt(ok, S.cur);   // 記錄層：全部語言模式嘅單一 funnel
   markAnswer(ok);
   if(typeof extraHL === 'function') extraHL();
   else if(container && ansId){
@@ -1890,6 +1988,7 @@ function startCartRush(){
 
 function endGame(){
   stopLive();
+  Record.finish();
   show('screen-end');
   const total = Math.max(1, S.answered);
   const pct = S.correct / total;
