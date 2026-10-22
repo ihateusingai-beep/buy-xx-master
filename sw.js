@@ -5,7 +5,7 @@
  *   - Network-first with cache fallback for HTML (so updates work)
  *   - Skip waiting + clients claim so teacher sees updates next reload
  */
-const VERSION = 'v1.8-sen-pwa1';
+const VERSION = 'v1.8-sen-pwa2';
 const SHELL = [
   './',
   './index.html',
@@ -19,6 +19,8 @@ const SHELL = [
   './assets/milk.jpg',
   './assets/basketball.jpg',
   './assets/football.jpg',
+  './assets/apple.jpg',
+  './assets/orange.jpg',
   './assets/puichi-logo.png',
   './assets/icon-192.png',
   './assets/icon-512.png',

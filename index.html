@@ -370,12 +370,8 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
         <button class="chip" data-d="hard" type="button">🔴 高 · 4</button>
       </div>
       <div style="font-weight:900;color:#1e5a8a;margin:6px 0 4px">詞彙範圍</div>
-      <div class="row" id="vocab-row">
-        <button class="chip on" data-v="all" type="button">🌈 全部</button>
-        <button class="chip" data-v="stationery" type="button">✏️ 文具 · 4</button>
-        <button class="chip" data-v="mall" type="button">🛍️ 商場 · 5</button>
-      </div>
-      <div style="font-size:.82rem;color:#5a7a96;margin:2px 0 6px">鎖定後，聽圖選／砌短語／遊戲都只出呢範圍。評估時建議先鎖。</div>
+      <div class="row" id="vocab-row"></div>
+      <div style="font-size:.82rem;color:#5a7a96;margin:2px 0 6px">鎖定後，聽圖選／砌短語／遊戲都只出呢範圍。評估時建議先鎖。「分類詞」= 無圖嘅字，只能砌短語產出。</div>
       <details class="more-modes">
         <summary>更多玩法</summary>
         <div class="zone-title">經典</div>
@@ -472,11 +468,33 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
 <div class="toast" id="toast"></div>
 <script>
 /* BUY_XX_MASTER_V1_8_SEN */
-const ITEMS = {"bag": {"label": "書包", "img": "assets/bag.jpg", "cat": "stationery"}, "case": {"label": "筆盒", "img": "assets/case.jpg", "cat": "stationery"}, "pencil": {"label": "鉛筆", "img": "assets/pencil.jpg", "cat": "stationery"}, "ruler": {"label": "間尺", "img": "assets/ruler.jpg", "cat": "stationery"}, "cake": {"label": "蛋糕", "img": "assets/cake.jpg", "cat": "mall"}, "doll": {"label": "洋娃娃", "img": "assets/doll.jpg", "cat": "mall"}, "milk": {"label": "牛奶", "img": "assets/milk.jpg", "cat": "mall"}, "basketball": {"label": "籃球", "img": "assets/basketball.jpg", "cat": "mall"}, "football": {"label": "足球", "img": "assets/football.jpg", "cat": "mall"}};
+const ITEMS = {
+  // 文具類（4）— 對齊評估卷
+  "bag":       {"label": "書包",   "img": "assets/bag.jpg",       "cat": "stationery"},
+  "case":      {"label": "筆盒",   "img": "assets/case.jpg",      "cat": "stationery"},
+  "pencil":    {"label": "鉛筆",   "img": "assets/pencil.jpg",    "cat": "stationery"},
+  "ruler":     {"label": "間尺",   "img": "assets/ruler.jpg",     "cat": "stationery"},
+  // 食物類（4）— 蛋糕由原本嘅 mall 移入，令食物類夠 4 件撐到 hard 4 選
+  "milk":      {"label": "牛奶",   "img": "assets/milk.jpg",      "cat": "food"},
+  "apple":     {"label": "蘋果",   "img": "assets/apple.jpg",     "cat": "food"},
+  "orange":    {"label": "橙",     "img": "assets/orange.jpg",    "cat": "food"},
+  "cake":      {"label": "蛋糕",   "img": "assets/cake.jpg",      "cat": "food"},
+  // 玩具類（3）
+  "doll":      {"label": "洋娃娃", "img": "assets/doll.jpg",      "cat": "toy"},
+  "basketball":{"label": "籃球",   "img": "assets/basketball.jpg","cat": "toy"},
+  "football":  {"label": "足球",   "img": "assets/football.jpg",  "cat": "toy"},
+  // 分類詞（無圖）— 只可做砌短語產出，唔可以入選擇題（會造成歧義正確答案）
+  "wenju":     {"label": "文具",   "cat": "category"}
+};
 const IDS = Object.keys(ITEMS);
-const STATIONERY = IDS.filter(k => ITEMS[k].cat === 'stationery');
-const MALL = IDS.filter(k => ITEMS[k].cat === 'mall');
 const ALL = IDS.slice();
+// 有圖 = 可做選擇題圖片選項 / 出題目標
+const SELECTABLE = IDS.filter(k => ITEMS[k].img);
+// 無圖 = 分類詞，只可做 build 產出
+const WORDONLY  = IDS.filter(k => !ITEMS[k].img);
+const byCat = c => ALL.filter(k => ITEMS[k].cat === c);
+const PIC_CATS = [...new Set(SELECTABLE.map(k => ITEMS[k].cat))];
+const CAT_LABEL = {stationery:'文具', food:'食物', toy:'玩具', category:'分類詞'};
 const LETTERS = ['A','B','C','D'];
 const IDENTITIES = [
   {id:'star', emoji:'⭐', name:'小星星'},
@@ -634,7 +652,7 @@ function ensurePhraseTiles(ansId, extraBad){
   /* Always keep 買 + correct label; pad distractors; never slice them away */
   const correct = ITEMS[ansId].label;
   const verb = '買';
-  let dist = shuffle(poolAll().filter(function(x){ return x!==ansId; })).map(function(id){ return ITEMS[id].label; });
+  let dist = shuffle(buildPool().filter(function(x){ return x!==ansId; })).map(function(id){ return ITEMS[id].label; });
   const badVerbs = (extraBad||[]).slice();
   const n = nOpts(); // 2/3/4 -> tile budget
   // tiles: verb + correct + (n-1) distract labels + optional bad verbs on hard
@@ -685,7 +703,11 @@ function optBadgeHtml(i, label, imgHtml){
   return '<span class="badge">'+LETTERS[i]+'</span>'+(imgHtml||'')+'<div class="lab">'+LETTERS[i]+'. '+label+'</div>';
 }
 function itemImg(id){
-  return ITEMS[id] ? '<img src="'+ITEMS[id].img+'" alt="'+(ITEMS[id].label||'')+'">' : '';
+  const it = ITEMS[id];
+  if(!it) return '';
+  // 分類詞冇圖：出文字卡，唔好出壞圖（src="undefined"）
+  if(!it.img) return '<div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#eef4fa;border-radius:12px;font-size:1.6rem;font-weight:900;color:#2b5f8a">'+it.label+'</div>';
+  return '<img src="'+it.img+'" alt="'+it.label+'">';
 }
 function diffPick(a,b,c){ return S.diff==='easy'?a:(S.diff==='mid'?b:c); }
 const SPEAK_FOR = {
@@ -730,17 +752,32 @@ function shuffle(a){
 function nOpts(){ return S.diff==='easy'?2:S.diff==='mid'?3:4; }
 
 // D1：老師鎖定詞彙範圍時，全模式共用嘅詞彙池
+// 注意：poolAll() 永遠唔回傳分類詞——聽圖選同 arcade 都要圖。
+// 鎖「分類詞」時呢度會 fallback 去全部有圖詞彙，並提示老師（分類詞只適用於砌短語）。
 function poolAll(){
-  if(S.vocabScope==='stationery') return STATIONERY;
-  if(S.vocabScope==='mall') return MALL;
-  return ALL;
+  if(S.vocabScope==='all') return SELECTABLE;
+  const p = SELECTABLE.filter(k => ITEMS[k].cat === S.vocabScope);
+  return p.length ? p : SELECTABLE;
+}
+// 砌短語（產出）嘅池：包含分類詞，因為「買文具」係合語法嘅
+function buildPool(){
+  if(S.vocabScope==='all') return ALL;
+  const p = ALL.filter(k => ITEMS[k].cat === S.vocabScope);
+  return p.length ? p : ALL;
 }
 function pickPool(mode){
   // 鎖定範圍 → 一律用該範圍，唔再隨機抽
-  if(S.vocabScope==='stationery') return STATIONERY;
-  if(S.vocabScope==='mall') return MALL;
-  if(mode==='listen' || mode==='shop' || mode==='build') return Math.random()<.55 ? STATIONERY : MALL;
-  return ALL;
+  if(S.vocabScope!=='all'){
+    const p = (mode==='build' ? ALL : SELECTABLE).filter(k => ITEMS[k].cat === S.vocabScope);
+    if(p.length) return p;
+  }
+  if(mode==='build') return ALL;
+  if(mode==='listen' || mode==='shop'){
+    const cats = PIC_CATS.filter(c => c!=='category');
+    const c = cats[Math.floor(Math.random()*cats.length)];
+    return SELECTABLE.filter(k => ITEMS[k].cat === c);
+  }
+  return SELECTABLE;
 }
 
 /* TTS */
@@ -814,11 +851,27 @@ $('diff-row').onclick = (e)=>{
   AudioFX.tap();
 };
 // D1：老師鎖定詞彙範圍。評估時必須鎖定，否則抽到咩詞唔可控。
+const CAT_ICON = {stationery:'✏️', food:'🍎', toy:'🧸', category:'📦'};
+function buildVocabRow(){
+  const row = $('vocab-row'); if(!row) return;
+  row.innerHTML='';
+  const opts = [['all','🌈','有圖 · ' + SELECTABLE.length]];
+  PIC_CATS.forEach(c => opts.push([c, CAT_ICON[c] || '•', (CAT_LABEL[c] || c) + ' · ' + byCat(c).filter(k=>ITEMS[k].img).length]));
+  if(WORDONLY.length) opts.push(['category', CAT_ICON.category, '分類詞 · ' + WORDONLY.length]);
+  opts.forEach(function(o){
+    const b = document.createElement('button');
+    b.type='button'; b.className='chip' + (S.vocabScope===o[0] ? ' on' : '');
+    b.dataset.v = o[0]; b.textContent = o[1] + ' ' + o[2];
+    row.appendChild(b);
+  });
+}
+buildVocabRow();
 $('vocab-row').onclick = (e)=>{
   const b = e.target.closest('[data-v]'); if(!b) return;
   S.vocabScope = b.dataset.v;
   [...$('vocab-row').children].forEach(x=>x.classList.toggle('on', x===b));
   AudioFX.tap();
+  if(S.vocabScope==='category') toast('分類詞冇圖：聽圖選／遊戲會用全部有圖詞彙，砌短語先用得着');
 };
 const csRow = $('catch-speed-row');
 if(csRow){
