@@ -369,6 +369,13 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
         <button class="chip" data-d="mid" type="button">🟡 中 · 3</button>
         <button class="chip" data-d="hard" type="button">🔴 高 · 4</button>
       </div>
+      <div style="font-weight:900;color:#1e5a8a;margin:6px 0 4px">詞彙範圍</div>
+      <div class="row" id="vocab-row">
+        <button class="chip on" data-v="all" type="button">🌈 全部</button>
+        <button class="chip" data-v="stationery" type="button">✏️ 文具 · 4</button>
+        <button class="chip" data-v="mall" type="button">🛍️ 商場 · 5</button>
+      </div>
+      <div style="font-size:.82rem;color:#5a7a96;margin:2px 0 6px">鎖定後，聽圖選／砌短語／遊戲都只出呢範圍。評估時建議先鎖。</div>
       <details class="more-modes">
         <summary>更多玩法</summary>
         <div class="zone-title">經典</div>
@@ -502,6 +509,9 @@ const NEED_SCENES = [
 const S = {
   identity: IDENTITIES[0],
   diff: 'easy',
+  // D1：詞彙範圍。'all' = 沿用舊隨機行為；'stationery' / 'mall' = 老師鎖定，
+  // 一旦鎖定，全部模式（含 arcade）都只可以用該範圍嘅詞彙。
+  vocabScope: 'all',
   catchSpeed: 'slow',  // 'slow' | 'mid' | 'fast' — 影響 Retro 模式速度
   mode: 'path',
   pathIdx: 0,
@@ -603,7 +613,7 @@ function clearRoundUI(){ const fb=$('fb'); if(fb){ fb.textContent=''; fb.classNa
 function markAnswer(ok){
   S.locked=true; S.pickOk=!!ok; S.answered++;
   if(ok) S.correct++;
-  if(ok) AudioFX.ok(); else AudioFX.bad();
+  if(ok) AudioFX.ok(); else AudioFX.nudge();
   setHudScore();
 }
 function rollbackLastPick(){
@@ -624,7 +634,7 @@ function ensurePhraseTiles(ansId, extraBad){
   /* Always keep 買 + correct label; pad distractors; never slice them away */
   const correct = ITEMS[ansId].label;
   const verb = '買';
-  let dist = shuffle(ALL.filter(function(x){ return x!==ansId; })).map(function(id){ return ITEMS[id].label; });
+  let dist = shuffle(poolAll().filter(function(x){ return x!==ansId; })).map(function(id){ return ITEMS[id].label; });
   const badVerbs = (extraBad||[]).slice();
   const n = nOpts(); // 2/3/4 -> tile budget
   // tiles: verb + correct + (n-1) distract labels + optional bad verbs on hard
@@ -647,11 +657,16 @@ function ensurePhraseTiles(ansId, extraBad){
 }
 
 function pickChoices(answerId, pool, n){
+  const src=(pool || poolAll()).filter(function(x){return x!==answerId;});
   let choices=[answerId];
-  const distract=shuffle((pool||ALL).filter(function(x){return x!==answerId;}));
+  const distract=shuffle(src);
   while(choices.length<n && distract.length) choices.push(distract.shift());
-  const more=shuffle(ALL.filter(function(x){return choices.indexOf(x)<0;}));
-  while(choices.length<n && more.length) choices.push(more.shift());
+  // D1：唔可以靜靜補範圍外嘅詞。pool 夠就寧願少一個選項（該題難度實際降低），
+  // 只有 pool 連 2 個選項都砌唔到，先退回全池，避免出到冇得揀嘅題。
+  if(choices.length<2){
+    const more=shuffle(ALL.filter(function(x){return x!==answerId && choices.indexOf(x)<0;}));
+    while(choices.length<2 && more.length) choices.push(more.shift());
+  }
   return shuffle(choices);
 }
 function buildOptGrid(choices, renderItem, onChoose){
@@ -713,7 +728,17 @@ function shuffle(a){
   return arr;
 }
 function nOpts(){ return S.diff==='easy'?2:S.diff==='mid'?3:4; }
+
+// D1：老師鎖定詞彙範圍時，全模式共用嘅詞彙池
+function poolAll(){
+  if(S.vocabScope==='stationery') return STATIONERY;
+  if(S.vocabScope==='mall') return MALL;
+  return ALL;
+}
 function pickPool(mode){
+  // 鎖定範圍 → 一律用該範圍，唔再隨機抽
+  if(S.vocabScope==='stationery') return STATIONERY;
+  if(S.vocabScope==='mall') return MALL;
   if(mode==='listen' || mode==='shop' || mode==='build') return Math.random()<.55 ? STATIONERY : MALL;
   return ALL;
 }
@@ -764,7 +789,9 @@ const AudioFX = {
     o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+d);
   },
   ok(){ this.tone(523,.12); setTimeout(()=>this.tone(659,.12),90); setTimeout(()=>this.tone(784,.18),180); },
-  bad(){ this.tone(220,.18,'square',.12); setTimeout(()=>this.tone(180,.22,'square',.1),120); },
+  // D3：答錯唔用負面音效。舊版係兩聲下降 square tone（220→180Hz），
+  // 語氣上明確係「錯」。改為中性輕音，只確認「已收到輸入」，唔帶好壞判斷。
+  nudge(){ this.tone(440,.06,'sine',.06); },
   tap(){ this.tone(660,.05,'triangle',.08); }
 };
 
@@ -784,6 +811,13 @@ $('diff-row').onclick = (e)=>{
   const b = e.target.closest('[data-d]'); if(!b) return;
   S.diff = b.dataset.d;
   [...$('diff-row').children].forEach(x=>x.classList.toggle('on', x===b));
+  AudioFX.tap();
+};
+// D1：老師鎖定詞彙範圍。評估時必須鎖定，否則抽到咩詞唔可控。
+$('vocab-row').onclick = (e)=>{
+  const b = e.target.closest('[data-v]'); if(!b) return;
+  S.vocabScope = b.dataset.v;
+  [...$('vocab-row').children].forEach(x=>x.classList.toggle('on', x===b));
   AudioFX.tap();
 };
 const csRow = $('catch-speed-row');
@@ -873,7 +907,7 @@ function makeShop(){
   return {type:'shop', ans, phrase:'買'+ITEMS[ans].label, shelf:shuffle(shelf)};
 }
 function makeJudge(){
-  const id = ALL[Math.floor(Math.random()*ALL.length)];
+  const id = poolAll()[Math.floor(Math.random()*poolAll().length)];
   const label = ITEMS[id].label;
   const badVerb = Math.random()<.5 ? '吃' : '打';
   const good = {text:'買'+label, ok:true, id};
@@ -881,7 +915,7 @@ function makeJudge(){
   const opts = shuffle([good, bad]);
   // pad distractors for mid/hard with other wrongs
   while(opts.length < nOpts()){
-    const other = ALL[Math.floor(Math.random()*ALL.length)];
+    const other = poolAll()[Math.floor(Math.random()*poolAll().length)];
     const v = ['吃','打'][Math.floor(Math.random()*2)];
     const t = v + ITEMS[other].label;
     if(!opts.some(o=>o.text===t)) opts.push({text:t, ok:false, id:other});
@@ -1140,8 +1174,8 @@ $('btn-print').onclick = ()=>{
 /* ===== RETRO 6 CATCH ===== */
 function startCatch(){
   const goal = diffPick(6,8,10);
-  const poolN = diffPick(2,4,Math.min(6, ALL.length));
-  const basePool = shuffle(ALL).slice(0, poolN);
+  const poolN = diffPick(2,4,Math.min(6, poolAll().length));
+  const basePool = shuffle(poolAll()).slice(0, poolN);
   let target = basePool[0];
   const body = $('game-body');
   body.innerHTML = ''
@@ -1251,7 +1285,7 @@ function startCatch(){
           }
           if(Math.random()<0.4) setTarget();
         } else {
-          combo=0; AudioFX.bad();
+          combo=0; AudioFX.nudge();
           $('fb').textContent = '唔啱！應該：買'+ITEMS[target].label;
           $('fb').className='fb bad';
           stage.style.boxShadow='inset 0 0 0 6px rgba(231,76,60,.45)';
@@ -1271,7 +1305,7 @@ function startCatch(){
 function startRunway(){
   const lanesN = diffPick(2,3,3);
   const goal = diffPick(5,6,8);
-  const pool = shuffle(ALL).slice(0, diffPick(3,5,5));
+  const pool = shuffle(poolAll()).slice(0, diffPick(3,5,5));
   let target = pool[0];
   let lane = Math.floor(lanesN/2);
   let cleared=0, locked=false;
@@ -1373,7 +1407,7 @@ function startRunway(){
             if(Math.random()<0.5) setTarget();
           }, 700);
         } else {
-          AudioFX.bad();
+          AudioFX.nudge();
           $('rl'+lane).classList.add('bad-flash');
           const right = rowGates.find(function(x){ return x.good; });
           if(right) $('rl'+right.lane).classList.add('good-flash');
@@ -1422,7 +1456,7 @@ function startTalk(){
     if(step===0){
       const nopt = nOpts();
       let choices=[ans];
-      const dist=shuffle(ALL.filter(function(x){return x!==ans;}));
+      const dist=shuffle(poolAll().filter(function(x){return x!==ans;}));
       while(choices.length<nopt && dist.length) choices.push(dist.shift());
       choices=shuffle(choices);
       // 店員明示目標 — 顯示目標圖 + 短語 + 🔊 再聽掣
@@ -1443,7 +1477,7 @@ function startTalk(){
             $('fb').textContent='啱！跟住砌短語'; $('fb').className='fb ok';
             $('hud-score').textContent='★ '+S.correct; render();
           } else {
-            AudioFX.bad(); el.classList.add('wrong');
+            AudioFX.nudge(); el.classList.add('wrong');
             Array.prototype.forEach.call(grid.children, function(c,ci){ if(choices[ci]===ans) c.classList.add('correct'); c.classList.add('disabled'); });
             $('fb').textContent='唔啱，應該：'+ph; $('fb').className='fb bad';
             showAfterRow(true, false);
@@ -1480,7 +1514,7 @@ function startTalk(){
                 step=0; S.locked=false; $('fb').textContent=''; render();
               }, 900);
             } else {
-              AudioFX.bad();
+              AudioFX.nudge();
               $('ts1').style.borderColor='#e74c3c'; $('ts2').style.borderColor='#e74c3c';
               $('fb').textContent='唔啱，應該：'+ph; $('fb').className='fb bad';
               showAfterRow(true, false);
@@ -1509,7 +1543,7 @@ function startCartRush(){
   const itemGap    = TRACK / (totalItems + 1);
 
   // 6-8 條獨立題,每條唔同 item
-  const itemIds = shuffle(ALL).slice(0, Math.min(totalItems, ALL.length));
+  const itemIds = shuffle(poolAll()).slice(0, Math.min(totalItems, poolAll().length));
 
   // State
   let playerDist = 0;
@@ -1631,7 +1665,7 @@ function startCartRush(){
     renderStrikes();
 
     const nopt = nOpts();
-    const choices = pickChoices(ans, ALL, nopt);
+    const choices = pickChoices(ans, poolAll(), nopt);
     const grid = $('cart-q-grid');
     grid.className = 'opts ' + optionCountClass(choices.length);
     grid.innerHTML = '';
@@ -1668,7 +1702,7 @@ function startCartRush(){
           }, 900);
         } else {
           strikes++;
-          AudioFX.bad();
+          AudioFX.nudge();
           btn.classList.add('wrong');
           // 標示啱嗰粒 + 解返佢俾學生再撳
           Array.prototype.forEach.call(grid.querySelectorAll('.opt'), function(c,ci){
