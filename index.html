@@ -129,6 +129,9 @@ body.home #btn-home{display:none}
 .mode-btn.hero.hero-retro{min-height:84px;border-color:#e94560;background:linear-gradient(180deg,#2a1a2e,#16213e);box-shadow:0 6px 0 #7a1830}
 .mode-btn.hero.hero-retro .t{color:#ff6b81;font-size:1.35rem}
 .mode-btn.hero.hero-retro .d{color:#a0aec0;font-size:.95rem}
+.mode-btn.hero.hero-mix{min-height:110px;border-color:#2faf52;background:linear-gradient(180deg,#f4fff8,#e4f9ec);box-shadow:0 6px 0 #1e7a38}
+.mode-btn.hero.hero-mix .t{color:#1e7a38;font-size:1.5rem}
+.mode-btn.hero.hero-mix .d{color:#2f6b45;font-size:1rem}
 .sec-label{font-weight:900;color:#1e5a8a;margin:8px 0 4px;font-size:1.05rem}
 .home-top{display:grid;grid-template-columns:1fr;gap:6px}
 .more-modes{margin-top:6px;border:3px solid #b8d4ee;border-radius:16px;background:#f4faff;padding:8px 10px}
@@ -360,7 +363,16 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
       <div class="hero-path">
         <button class="mode-btn hero" data-mode="path" type="button"><div class="t">🚀 一條龍</div><div class="d">聽→揀→買→講 · 5 關</div></button>
         <button class="mode-btn hero hero-retro" data-mode="path-retro" type="button"><div class="t">🎮 Retro 一條龍</div><div class="d">接貨→對話→跑酷</div></button>
+        <button class="mode-btn hero hero-mix" data-mode="mix" type="button"><div class="t">🎮 遊戲＋答題</div><div class="d">玩一會遊戲 → 答一題 → 再玩</div></button>
       </div>
+      <div style="font-weight:900;color:#1e5a8a;margin:6px 0 4px">遊戲段落</div>
+      <div class="row" id="arcade-row">
+        <button class="chip on" data-a="catch" type="button">📦 接貨</button>
+        <button class="chip" data-a="run" type="button">🏃 走線</button>
+        <button class="chip" data-a="cart" type="button">🛒 追車</button>
+        <button class="chip" data-a="talk" type="button">🗣 像素店員</button>
+      </div>
+      <div style="font-size:.82rem;color:#5a7a96;margin:2px 0 6px">「遊戲＋答題」每輪 = 玩一會遊戲 → 答一題 → 再玩。答錯唔會減少遊戲時間。</div>
       <div style="font-weight:900;color:#1e5a8a;margin:6px 0 4px">揀身份</div>
       <div class="id-grid" id="id-grid"></div>
       <div style="font-weight:900;color:#1e5a8a;margin:6px 0 4px">難度</div>
@@ -426,6 +438,9 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
       </div>
       <div class="prompt" id="prompt">—</div>
       <div id="game-body"></div>
+      <div class="row no-print" id="skip-row" style="display:none">
+        <button class="btn sec" id="btn-skip-game" type="button">⏭ 跳過遊戲</button>
+      </div>
       <div class="fb" id="fb"></div>
       <div class="row no-print" id="after-row" style="display:none">
         <button class="btn ok btn-main" id="btn-next" type="button">下一題 ▶</button>
@@ -509,8 +524,19 @@ const IDENTITIES = [
 const HOME_IDS = IDENTITIES.slice(0, 4);
 const PATH = ['listen','shop','judge','build','need'];
 const PATH_RETRO = ['catch','talk','run'];
+// 混合模式路徑：每組 = 一個遊戲段落 + 一題，交替落去。
+// 題數 = 組數（老師用「題數」控制），語言題型喺 listen / build 之間輪轉。
+function buildMixPath(){
+  const out=[];
+  const n = Math.max(1, S.qCount||4);
+  for(let i=0;i<n;i++){
+    out.push(S.mixArcade);
+    out.push(S.mixLang[i % S.mixLang.length]);
+  }
+  return out;
+}
 const MODE_LABEL = {
-  path:'一條龍', 'path-retro':'Retro一條龍', listen:'聽圖選', shop:'店員任務', judge:'啱定錯', build:'砌短語', need:'要定唔要',
+  path:'一條龍', 'path-retro':'Retro一條龍', mix:'遊戲＋答題', listen:'聽圖選', shop:'店員任務', judge:'啱定錯', build:'砌短語', need:'要定唔要',
   catch:'接貨小店員', talk:'像素店員', run:'商場走線',
   cart:'購物車極速'
 };
@@ -527,6 +553,9 @@ const NEED_SCENES = [
 const S = {
   identity: IDENTITIES[0],
   diff: 'easy',
+  // 混合模式：遊戲段落 ⇄ 題目 交替。arcade = 老師每堂揀嘅遊戲段落。
+  mixArcade: 'catch',
+  mixLang: ['listen','build'],   // 語言題型交替次序
   // D1：詞彙範圍。'all' = 沿用舊隨機行為；'stationery' / 'mall' = 老師鎖定，
   // 一旦鎖定，全部模式（含 arcade）都只可以用該範圍嘅詞彙。
   vocabScope: 'all',
@@ -559,7 +588,7 @@ function catchSub(){ return CATCH_SUB[S.catchSpeed] || CATCH_SUB.slow; }
 const $ = (id) => document.getElementById(id);
 
 /* === shared UI / scoring helpers (refactor) === */
-function isPathMode(){ return S.mode==='path' || S.mode==='path-retro'; }
+function isPathMode(){ return S.mode==='path' || S.mode==='path-retro' || S.mode==='mix'; }
 function updatePathProgress(){
   const wrap = $('path-progress');
   const dots = $('path-dots');
@@ -580,18 +609,20 @@ function updatePathProgress(){
 
 function showStageClear(nextMode, thenFn){
   const ov=$('stage-overlay'); if(!ov){ thenFn(); return; }
-  $('stage-emoji').textContent='⭐';
-  $('stage-title').textContent='過關！';
-  $('stage-sub').textContent='下一關：'+(MODE_LABEL[nextMode]||nextMode);
+  // 混合模式每輪都出，唔可以當「過關」咁隆重 — 遮罩縮短、唔播語音，唔阻住流程
+  const mix = (S.mode==='mix');
+  $('stage-emoji').textContent = mix ? '🎮' : '⭐';
+  $('stage-title').textContent = mix ? '玩完一輪' : '過關！';
+  $('stage-sub').textContent = (mix ? '下一題：' : '下一關：') + (MODE_LABEL[nextMode]||nextMode);
   ov.classList.add('on'); ov.setAttribute('aria-hidden','false');
   AudioFX.ok();
-  speak('過關。下一關'+(MODE_LABEL[nextMode]||''));
+  if(!mix) speak('過關。下一關'+(MODE_LABEL[nextMode]||''));
   clearTimeout(showStageClear._t);
   showStageClear._then=thenFn;
   showStageClear._t=setTimeout(function(){
     ov.classList.remove('on'); ov.setAttribute('aria-hidden','true');
     const f=showStageClear._then; showStageClear._then=null; if(f) f();
-  }, 1200);
+  }, mix ? 550 : 1200);
 }
 function advancePathOrEnd(){
   if(isPathMode() && S.pathIdx < S.pathList.length-1){
@@ -725,6 +756,9 @@ const SPEAK_FOR = {
 function startLiveMode(mode){
   S.queue = [];
   S.cur = {type:mode};
+  // D8：遊戲段落要有逃生門。部分學生對移動物件敏感，無退路會坐低唔玩。
+  const sk = $('skip-row');
+  if(sk){ sk.style.display='flex'; $('btn-skip-game').textContent = (S.mode==='mix') ? '⏭ 跳過遊戲，直接答題' : '⏭ 唔玩住'; }
   if(mode==='catch') startCatch();
   else if(mode==='run') startRunway();
   else if(mode==='talk') startTalk();
@@ -977,6 +1011,14 @@ if(csRow){
     AudioFX.tap();
   };
 }
+// 遊戲段落選擇（混合模式用）
+$('arcade-row').onclick = (e)=>{
+  const b = e.target.closest('[data-a]'); if(!b) return;
+  S.mixArcade = b.dataset.a;
+  [...$('arcade-row').children].forEach(x=>x.classList.toggle('on', x===b));
+  AudioFX.tap();
+};
+
 document.querySelectorAll('.mode-btn').forEach(btn=>{
   btn.onclick = ()=>{
     S.mode = btn.dataset.mode;
@@ -993,7 +1035,7 @@ function currentMode(){
 function startRun(){
   stopLive();
   S.pathIdx = 0; S.correct=0; S.answered=0; S.qIndex=0; S.recSeq=0;
-  S.pathList = (S.mode==='path-retro') ? PATH_RETRO : PATH;
+  S.pathList = (S.mode==='path-retro') ? PATH_RETRO : (S.mode==='mix' ? buildMixPath() : PATH);
   Record.start({ student: S.identity.name, arcade: S.mode });
   startMode(currentMode());
 }
@@ -1005,14 +1047,16 @@ function startMode(mode){
   $('hud-mode').textContent = pathish ? (MODE_LABEL[S.mode] + ' · ' + MODE_LABEL[mode]) : MODE_LABEL[mode];
   updatePathProgress();
   clearRoundUI();
+  const skr = $('skip-row'); if(skr) skr.style.display='none';
   if(mode==='catch' || mode==='run' || mode==='talk' || mode==='cart'){
     startLiveMode(mode);
     return;
   }
-  S.queue = buildQueue(mode, S.qCount);
+  // 混合模式：每個語言段落只出 1 題，之後即刻返去遊戲段落
+  const qn = (S.mode==='mix') ? 1 : S.qCount;
+  S.queue = buildQueue(mode, qn);
   nextQuestion();
-}
-function stopLive(){
+}function stopLive(){
   if(S.live){
     try{ if(S.live.raf) cancelAnimationFrame(S.live.raf); }catch(e){}
     try{ if(S.live.timer) clearInterval(S.live.timer); }catch(e){}
@@ -1298,6 +1342,13 @@ $('btn-retry').onclick = doRetry;
 if($('btn-retry-sec')) $('btn-retry-sec').onclick = doRetry;
 $('btn-next').onclick = doNext;
 if($('btn-next-sec')) $('btn-next-sec').onclick = doNext;
+// D8：跳過遊戲段落，直接去下一段（混合模式 = 直接答題）
+$('btn-skip-game').onclick = ()=>{
+  if(!S.live) return;
+  stopLive();
+  const skr = $('skip-row'); if(skr) skr.style.display='none';
+  advancePathOrEnd();
+};
 $('btn-speak').onclick = ()=>{
   const q = S.cur;
   if(!q){ speak('歡迎嚟到商場去'); return; }
@@ -1323,8 +1374,12 @@ $('btn-print').onclick = ()=>{
 };
 
 /* ===== RETRO 6 CATCH ===== */
+// 混合模式：遊戲段落要短 — 跑 2 個單位就交返出嚟，唔阻住學生答題。
+// 規則：答對答錯，遊戲段落長度完全一樣（唔因答錯縮短或延長）。
+function segGoal(base){ return (S.mode==='mix') ? 2 : base; }
+
 function startCatch(){
-  const goal = diffPick(6,8,10);
+  const goal = segGoal(diffPick(6,8,10));
   const poolN = diffPick(2,4,Math.min(6, poolAll().length));
   const basePool = shuffle(poolAll()).slice(0, poolN);
   let target = basePool[0];
@@ -1344,6 +1399,10 @@ function startCatch(){
   const basket = $('catch-basket');
   let x = 50, vx = 0, caught=0, combo=0, items=[], lastSpawn=0, slowUntil=0;
   const keys = {l:false,r:false};
+  // D4：全屏接客 — 唔使瞄準，撳一下就接住 band 內嘅嘢。
+  // 對 motor / visual impairment 學生友善好多。預設跟難度（初=全屏，高=瞄準），
+  // 但可以用掣覆寫，因為同一位學生可能初級要全屏、中級要瞄準。
+  let tapCatch = (S.diff==='easy');
   function setTarget(){
     target = basePool[Math.floor(Math.random()*basePool.length)];
     const ph = '買'+ITEMS[target].label;
@@ -1363,7 +1422,70 @@ function startCatch(){
   }
   bindHold($('c-left'), -1);
   bindHold($('c-right'), 1);
+  // 全屏接客開關
+  const modeRow = document.createElement('div');
+  modeRow.className='row';
+  modeRow.id='catch-mode-row';
+  modeRow.innerHTML = '<button class="chip" type="button" data-cm="aim">🎯 瞄準</button>'
+                     + '<button class="chip" type="button" data-cm="tap">👆 全屏接客</button>';
+  const ctrl = document.querySelector('#game-body .retro-ctrl');
+  if(ctrl && ctrl.parentNode) ctrl.parentNode.insertBefore(modeRow, ctrl);
+  function syncCatchMode(){
+    modeRow.querySelectorAll('[data-cm]').forEach(function(b){
+      b.classList.toggle('on', (b.dataset.cm==='tap') === tapCatch);
+    });
+    const p = $('prompt');
+    if(p) p.innerHTML = (tapCatch ? '撳一下就接住：' : '接住正確：')
+      + '<mark id="catch-phrase">' + ('買' + ITEMS[target].label) + '</mark>';
+  }
+  modeRow.onclick = function(e){
+    const b = e.target.closest('[data-cm]'); if(!b) return;
+    tapCatch = (b.dataset.cm==='tap');
+    syncCatchMode();
+    AudioFX.tap();
+  };
+  syncCatchMode();
+  // 全屏接客：搵 band 內最接近籃嗰件，唔理佢喺邊個 x 都接
+  function doTapCatch(){
+    let best=null;
+    for(let i=items.length-1;i>=0;i--){
+      const it=items[i];
+      if(it.y>=78 && it.y<=92){ best=it; break; }
+    }
+    if(!best) return false;
+    x = best.x; basket.style.left = x+'%';
+    return resolveCatch(best);
+  }
+  // 瞄準同全屏接客共用同一套判定 — 兩條路徑嘅規則完全一致
+  function resolveCatch(it){
+    it.el.remove();
+    const idx = items.indexOf(it); if(idx>=0) items.splice(idx,1);
+    S.answered++;
+    if(it.good){
+      S.correct++; caught++; combo++;
+      AudioFX.ok();
+      $('fb').textContent = 'OK 買'+ITEMS[target].label+(combo>=3?' COMBO!':'');
+      $('fb').className='fb ok';
+      if(combo>=3) slowUntil = performance.now() + 1000;
+      $('hud-score').textContent = '★ '+S.correct;
+      $('hud-q').textContent = caught+'/'+goal;
+      if(caught >= goal){
+        $('fb').textContent = '接貨完成！';
+        setTimeout(finishLiveMode, 700);
+        return true;
+      }
+      if(Math.random()<0.4) setTarget();
+    } else {
+      combo=0; AudioFX.nudge();
+      $('fb').textContent = '唔啱！應該：買'+ITEMS[target].label;
+      $('fb').className='fb bad';
+      stage.style.boxShadow='inset 0 0 0 6px rgba(231,76,60,.45)';
+      setTimeout(function(){ stage.style.boxShadow=''; }, 350);
+    }
+    return false;
+  }
   stage.addEventListener('pointerdown', (e)=>{
+    if(tapCatch){ doTapCatch(); return; }
     const r = stage.getBoundingClientRect();
     vx = (e.clientX < r.left + r.width/2) ? -1 : 1;
   });
@@ -1419,29 +1541,7 @@ function startCatch(){
       it.el.style.top = it.y+'%';
       it.el.style.left = it.x+'%';
       if(it.y >= 78 && it.y <= 92 && it.x>=bL && it.x<=bR){
-        it.el.remove(); items.splice(i,1);
-        S.answered++;
-        if(it.good){
-          S.correct++; caught++; combo++;
-          AudioFX.ok();
-          $('fb').textContent = 'OK 買'+ITEMS[target].label+(combo>=3?' COMBO!':'');
-          $('fb').className='fb ok';
-          if(combo>=3) slowUntil = now + 1000;
-          $('hud-score').textContent = '★ '+S.correct;
-          $('hud-q').textContent = caught+'/'+goal;
-          if(caught >= goal){
-            $('fb').textContent = '接貨完成！';
-            setTimeout(finishLiveMode, 700);
-            return;
-          }
-          if(Math.random()<0.4) setTarget();
-        } else {
-          combo=0; AudioFX.nudge();
-          $('fb').textContent = '唔啱！應該：買'+ITEMS[target].label;
-          $('fb').className='fb bad';
-          stage.style.boxShadow='inset 0 0 0 6px rgba(231,76,60,.45)';
-          setTimeout(function(){ stage.style.boxShadow=''; }, 350);
-        }
+        if(resolveCatch(it)) return;
       } else if(it.y > 105){
         it.el.remove(); items.splice(i,1);
       }
@@ -1455,7 +1555,7 @@ function startCatch(){
 /* ===== RETRO 8 RUN ===== */
 function startRunway(){
   const lanesN = diffPick(2,3,3);
-  const goal = diffPick(5,6,8);
+  const goal = segGoal(diffPick(5,6,8));
   const pool = shuffle(poolAll()).slice(0, diffPick(3,5,5));
   let target = pool[0];
   let lane = Math.floor(lanesN/2);
@@ -1688,7 +1788,7 @@ function startTalk(){
 /* ===== CART RUSH — gameplay-heavy mode ===== */
 function startCartRush(){
   // 賽道對決 — 答啱加速 / 答錯減速 / 對手 AI 持續前進
-  const totalItems = diffPick(6, 7, 8);
+  const totalItems = segGoal(diffPick(6, 7, 8));
   const maxLives   = 3;
   const TRACK      = 100;            // 0-100 賽道單位
   const itemGap    = TRACK / (totalItems + 1);
