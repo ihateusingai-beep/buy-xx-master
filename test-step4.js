@@ -89,9 +89,11 @@ console.log('\n[6] 規則：答錯唔影響遊戲段落長度');
 console.log('\n[7] 舊 path 冇被破壞');
 {
   const m = mk({ mode: 'path' });
-  chk('PATH 仍然 5 關', m.PATH.length === 5);
+  // v5 精簡：PATH 收窄到聽圖選 + 砌短語 2 關（語言模式只留 2 個）
+  chk('PATH = 聽圖選 + 砌短語', m.PATH.length === 2 && m.PATH[0] === 'listen' && m.PATH[1] === 'build', m.PATH.join(' → '));
   chk('PATH_RETRO 仍然 3 關', m.PATH_RETRO.length === 3);
   chk('mix 有獨立 MODE_LABEL', m.MODE_LABEL.mix === '遊戲＋答題');
+  chk('被砍模式嘅 LABEL 仍喺（方便加返）', !!m.MODE_LABEL.shop && !!m.MODE_LABEL.judge && !!m.MODE_LABEL.need);
 }
 
 console.log(fail ? '\n❌ ' + fail + ' 項失敗' : '\n✅ 全部通過');

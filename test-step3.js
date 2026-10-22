@@ -57,7 +57,7 @@ console.log('[1] 一次作答 = 一筆記錄');
   chk('firstTry=true', r.firstTry === true);
   chk('詞彙 = 蘋果 / food', r.word === '蘋果' && r.cat === 'food', r.word + '/' + r.cat);
   chk('stem 有記低', r.stem === '弟弟買蘋果');
-  chk('build 以外 answerVisible=false', r.answerVisible === false);
+  chk('listen answerVisible=false', r.answerVisible === false);
 }
 
 console.log('\n[2] retry 歸併：錯→對 = 同一筆，attempts=2，首次非獨立答對');
@@ -100,7 +100,7 @@ console.log('\n[3] 多題各自獨立，recSeq 分隔');
   chk('題3 correct=false 仍記低', rs[2].correct === false && rs[2].attempts === 1);
 }
 
-console.log('\n[4] 砌短語標記 answerVisible（答案喺畫面上）');
+console.log('\n[4] 砌短語標記 answerVisible（D9 修好後 = false）');
 {
   const store = mkStore();
   const S = { diff: 'mid', vocabScope: 'category', qCount: 4, pathList: ['build'], recSeq: 1 };
@@ -109,7 +109,7 @@ console.log('\n[4] 砌短語標記 answerVisible（答案喺畫面上）');
   Record.attempt(true, { type: 'build', ans: 'wenju', phrase: '買文具' });
   Record.finish();
   const r = Record.load()[0].records[0];
-  chk('answerVisible=true', r.answerVisible === true);
+  chk('answerVisible=false（D9 已修，砌短語唔再顯示答案）', r.answerVisible === false);
   chk('hasImg=false（分類詞）', r.hasImg === false);
   chk('target=買文具', r.target === '買文具');
 }

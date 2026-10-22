@@ -95,6 +95,12 @@ body.play .icon-btn{min-width:44px;min-height:44px}
 .shelf-item .lab{font-weight:900;margin-top:4px;font-size:1rem}
 .shelf-item.gone{opacity:.25;pointer-events:none}
 .phrase-board{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin:12px 0}
+/* 砌短語嘅刺激區（D9：答案唔可以直接出現，要畀圖／同類成員圖） */
+.build-stim{display:flex;flex-direction:column;align-items:center;gap:6px;margin:10px 0}
+.build-stim img{width:150px;height:150px;object-fit:contain;background:#fff;border-radius:16px;border:3px solid #b8d4ee}
+.build-sibs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.build-sibs img{width:96px;height:96px}
+.build-hint{font-weight:800;color:#1e5a8a;font-size:.98rem;text-align:center}
 .slot{min-width:120px;min-height:72px;border:3px dashed #7eb8e8;border-radius:14px;background:#f4faff;
   display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:#1e5a8a;padding:8px}
 .slot.filled{border-style:solid;background:#e8f6ff}
@@ -358,10 +364,10 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
   <div class="screen on" id="screen-home">
     <div class="card">
       <h2>到商場去</h2>
-      <p class="tagline" style="text-align:center;font-weight:800;color:#3a7ab0">聽 → 揀 → 買 → 講「買××」</p>
+      <p class="tagline" style="text-align:center;font-weight:800;color:#3a7ab0">聽圖選 → 砌短語「買××」</p>
       <div class="sec-label">主推玩法</div>
       <div class="hero-path">
-        <button class="mode-btn hero" data-mode="path" type="button"><div class="t">🚀 一條龍</div><div class="d">聽→揀→買→講 · 5 關</div></button>
+        <button class="mode-btn hero" data-mode="path" type="button"><div class="t">🚀 一條龍</div><div class="d">聽圖選 → 砌短語 · 2 關</div></button>
         <button class="mode-btn hero hero-retro" data-mode="path-retro" type="button"><div class="t">🎮 Retro 一條龍</div><div class="d">接貨→對話→跑酷</div></button>
         <button class="mode-btn hero hero-mix" data-mode="mix" type="button"><div class="t">🎮 遊戲＋答題</div><div class="d">玩一會遊戲 → 答一題 → 再玩</div></button>
       </div>
@@ -384,16 +390,13 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
       <div style="font-weight:900;color:#1e5a8a;margin:6px 0 4px">詞彙範圍</div>
       <div class="row" id="vocab-row"></div>
       <div style="font-size:.82rem;color:#5a7a96;margin:2px 0 6px">鎖定後，聽圖選／砌短語／遊戲都只出呢範圍。評估時建議先鎖。「分類詞」= 無圖嘅字，只能砌短語產出。</div>
+      <div style="font-weight:900;color:#1e5a8a;margin:6px 0 4px">語言玩法</div>
+      <div class="mode-grid">
+        <button class="mode-btn" data-mode="listen" type="button"><div class="t">👂 聽圖選</div><div class="d">聽句揀圖</div></button>
+        <button class="mode-btn" data-mode="build" type="button"><div class="t">🧱 砌短語</div><div class="d">砌出「買 + XX」</div></button>
+      </div>
       <details class="more-modes">
         <summary>更多玩法</summary>
-        <div class="zone-title">經典</div>
-        <div class="mode-grid">
-          <button class="mode-btn" data-mode="listen" type="button"><div class="t">聽圖選</div><div class="d">聽句揀圖</div></button>
-          <button class="mode-btn" data-mode="shop" type="button"><div class="t">店員任務</div><div class="d">揀貨入籃</div></button>
-          <button class="mode-btn" data-mode="judge" type="button"><div class="t">啱定錯</div><div class="d">買／吃／打</div></button>
-          <button class="mode-btn" data-mode="build" type="button"><div class="t">砌短語</div><div class="d">買 + XX</div></button>
-          <button class="mode-btn" data-mode="need" type="button"><div class="t">要定唔要</div><div class="d">適當消費</div></button>
-        </div>
         <div class="zone-title retro">Retro 單關</div>
         <div class="mode-grid">
           <button class="mode-btn retro" data-mode="catch" type="button"><div class="t">接貨小店員</div><div class="d">左右接買XX</div></button>
@@ -419,6 +422,16 @@ body.home .tagline{margin-bottom:4px!important;font-size:.95rem}
           <button class="chip on" data-cs="slow" type="button">🐢 慢</button>
           <button class="chip" data-cs="mid" type="button">🚶 中</button>
           <button class="chip" data-cs="fast" type="button">🏃 快</button>
+        </div>
+        <div class="row" id="tts-rate-row" style="margin-top:6px;align-items:center">
+          <span style="font-weight:800">語音速度</span>
+          <button class="chip" data-tr="0.7" type="button">🐢 慢</button>
+          <button class="chip on" data-tr="0.9" type="button">🚶 中</button>
+          <button class="chip" data-tr="1" type="button">🏃 快</button>
+        </div>
+        <div class="row" style="margin-top:6px;align-items:center">
+          <button class="btn sec" id="btn-voice-test" type="button">🔊 語音自我檢查</button>
+          <span id="voice-info" style="font-weight:700;color:#1e5a8a;font-size:.9rem"></span>
         </div>
       </details>
     </div>
@@ -522,7 +535,9 @@ const IDENTITIES = [
   {id:'friend', emoji:'😊', name:'同學'}
 ];
 const HOME_IDS = IDENTITIES.slice(0, 4);
-const PATH = ['listen','shop','judge','build','need'];
+// v1 精簡版：語言模式只留 聽圖選 + 砌短語（對齊評估卷聆聽／產出）。
+// shop / judge / need 嘅函數本體保留，方便日後加返。
+const PATH = ['listen','build'];
 const PATH_RETRO = ['catch','talk','run'];
 // 混合模式路徑：每組 = 一個遊戲段落 + 一題，交替落去。
 // 題數 = 組數（老師用「題數」控制），語言題型喺 listen / build 之間輪轉。
@@ -556,6 +571,7 @@ const S = {
   // 混合模式：遊戲段落 ⇄ 題目 交替。arcade = 老師每堂揀嘅遊戲段落。
   mixArcade: 'catch',
   mixLang: ['listen','build'],   // 語言題型交替次序
+  ttsRate: 0.9,                  // D5：語音速度（老師可調）
   // D1：詞彙範圍。'all' = 沿用舊隨機行為；'stationery' / 'mall' = 老師鎖定，
   // 一旦鎖定，全部模式（含 arcade）都只可以用該範圍嘅詞彙。
   vocabScope: 'all',
@@ -697,10 +713,13 @@ function ensurePhraseTiles(ansId, extraBad){
     badVerbs.forEach(function(v){ if(out.indexOf(v)<0) out.push(v); });
   }
   // hard cap display but MUST include verb+correct
-  const maxTiles = S.diff==='easy'?3:S.diff==='mid'?4:5;
+  // 錯動詞干擾（吃／打）一定要留低 — 原本排喺 shuffle 後面被 slice 切走，
+  // hard 難度實際上冇乜動詞對比，難度階梯斷咗一截。
+  const maxTiles = S.diff==='easy'?3:(S.diff==='mid'?4:6);
   const required = [verb, correct];
-  const rest = shuffle(out.filter(function(t){ return required.indexOf(t)<0; }));
-  out = required.concat(rest).slice(0, Math.max(required.length, maxTiles));
+  const badFirst = badVerbs.filter(function(v){ return out.indexOf(v)>=0; });
+  const rest = shuffle(out.filter(function(t){ return required.indexOf(t)<0 && badFirst.indexOf(t)<0; }));
+  out = required.concat(badFirst, rest).slice(0, Math.max(required.length, maxTiles));
   // if slice dropped required (shouldn't), force
   required.forEach(function(t){ if(out.indexOf(t)<0) out.unshift(t); });
   return shuffle(out);
@@ -870,9 +889,9 @@ const Record = {
         vocabScope: S.vocabScope,
         stem: q.stem || '',
         target: q.phrase || q.ansText || '',
-        // D9：砌短語會把「買 + 答案」直接顯示喺題目提示，即答案喺畫面上。
-        // 報告唔可以當成真正產出，要標註。
-        answerVisible: q.type === 'build',
+        // D9 已修：砌短語唔再顯示答案（改為顯示圖片 / 同類成員圖做刺激），
+        // 所以 answerVisible 係 false。欄位保留，方便將來加新提示模式時準確標記。
+        answerVisible: false,
         attempts: 0,
         correct: false,
         firstTry: false
@@ -926,7 +945,8 @@ function speak(text){
   try{
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'zh-HK'; u.rate = 0.9;
+    u.lang = 'zh-HK';
+    u.rate = S.ttsRate || 0.9;   // D5：語速可由老師調，唔再硬編碼
     const v = pickVoice(); if(v) u.voice = v;
     speechSynthesis.speak(u);
   }catch(e){}
@@ -1018,6 +1038,32 @@ $('arcade-row').onclick = (e)=>{
   [...$('arcade-row').children].forEach(x=>x.classList.toggle('on', x===b));
   AudioFX.tap();
 };
+// D5：語音速度
+const trRow = $('tts-rate-row');
+if(trRow){
+  trRow.onclick = (e)=>{
+    const b = e.target.closest('[data-tr]'); if(!b) return;
+    S.ttsRate = parseFloat(b.dataset.tr) || 0.9;
+    [...trRow.querySelectorAll('[data-tr]')].forEach(x=>x.classList.toggle('on', x===b));
+    AudioFX.tap();
+  };
+}
+// D5：語音自我檢查 — 學校裝置可能根本冇 zh-HK 語音，之前係靜默失敗，
+// 老師唔知。呢個掣 5 秒內就知支唔支援。
+function voiceSelfTest(){
+  const v = pickVoice();
+  const info = $('voice-info');
+  const zh = voices.filter(x => /^zh|yue/i.test(x.lang||''));
+  let msg;
+  if(v) msg = '✅ 用緊：' + v.name + '（' + v.lang + '）';
+  else if(zh.length) msg = '⚠️ 搵唔到港式語音，會用：' + zh[0].name;
+  else msg = '❌ 呢部裝置搵唔到任何中文語音 — 聽題會冇聲音';
+  if(info) info.textContent = msg;
+  toast(msg);
+  speak('我要買書包');
+}
+const vtBtn = $('btn-voice-test');
+if(vtBtn) vtBtn.onclick = ()=>{ AudioFX.init(); voiceSelfTest(); };
 
 document.querySelectorAll('.mode-btn').forEach(btn=>{
   btn.onclick = ()=>{
@@ -1153,7 +1199,10 @@ function renderListen(q, body){
   replay.textContent='🔊 再聽一次';
   replay.style.cssText='width:100%;margin:0 0 12px;font-size:1.35rem';
   replay.onclick=function(){ speak(q.stem); };
-  const choices = pickChoices(q.ans, q.pool, nOpts());
+  // D6：選項次序要鎖定。答錯重試時唔可以重新洗牌，否則學生可以靠記住
+  // 上一個位置去蒙答案，根本冇聽清楚／睇清楚。q 係 S.cur，retry 時係同一個
+  // 物件，所以 cache 喺 q 上面就自然鎖住。
+  const choices = q._choices || (q._choices = pickChoices(q.ans, q.pool, nOpts()));
   const grid = buildOptGrid(choices, function(el, id, i){
     el.dataset.id=id;
     // 聽題：圖 + 字母，藏文字標籤（答完再顯示）
@@ -1224,7 +1273,24 @@ function renderJudge(q, body){
   body.appendChild(grid);
 }
 function renderBuild(q, body){
-  $('prompt').innerHTML = `砌短語：<mark>買 + ${ITEMS[q.ans].label}</mark>`;
+  const it = ITEMS[q.ans];
+  // D9：答案唔可以直接擺喺題目提示（原本係「砌短語：買 + 書包」，等於送答案）。
+  // 改成擺「刺激」：有圖就出圖；分類詞（無圖）就出同類成員圖，
+  // 學生要自己由圖諗返個詞，再砌出短語 — 呢個先係產出。
+  const stim = document.createElement('div'); stim.className='build-stim';
+  if(it.img){
+    stim.innerHTML = '<img src="'+it.img+'" alt="'+it.label+'">';
+  }else{
+    const sibs = ALL.filter(k => ITEMS[k].cat === it.cat && ITEMS[k].img).slice(0,4);
+    stim.innerHTML = '<div class="build-sibs">'
+      + sibs.map(k => '<img src="'+ITEMS[k].img+'" alt="">').join('')
+      + '</div><div class="build-hint">呢啲全部都係咩？砌出短語</div>';
+  }
+  // 句式骨架按難度畀，但唔會漏答案
+  const frame = (S.diff==='easy') ? '買 + □'
+              : (S.diff==='mid')  ? '□ + □'
+              : '砌出短語';
+  $('prompt').innerHTML = '砌短語：<mark>'+frame+'</mark>';
   S.answerSpeak = q.phrase;
   const board = document.createElement('div'); board.className='phrase-board';
   const slot1 = document.createElement('div'); slot1.className='slot'; slot1.id='slot1'; slot1.textContent='①';
@@ -1258,7 +1324,7 @@ function renderBuild(q, body){
     slot1.classList.remove('filled'); slot2.classList.remove('filled');
     slot1.style.borderColor=''; slot2.style.borderColor='';
     pool.querySelectorAll('.tile').forEach(t=>t.classList.remove('used')); };
-  body.append(board, pool, reset);
+  body.append(stim, board, pool, reset);
 }
 function renderNeed(q, body){
   const scn = q.scene;
